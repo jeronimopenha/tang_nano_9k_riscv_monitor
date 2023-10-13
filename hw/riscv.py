@@ -33,50 +33,71 @@ class Riscv:
         clk = m.Input("clk")
         rst = m.Input("rst")
 
-        pc_in = m.Wire("pc_in", self.data_width)
-        pc_out = m.Wire("pc_out", self.data_width)
-        pc_4_out = m.Wire("pc_4_out", self.data_width)
-        inst_out = m.Wire('inst_out', self.data_width)
-        shl2_jump_out = m.Wire('shl2_jump_out', self.data_width)
-        jump_add = m.Wire('jump_add', self.data_width)
-        c_jump = m.Wire('c_jump')
+        writedata = m.Wire('writedata', data_width)
+        inst = m.Wire('inst', data_width)
+        sigext = m.Wire('sigext', data_width)
+        data1 = m.Wire('data1', data_width)
+        data2 = m.Wire('data2', data_width)
+        aluout = m.Wire('aluout', data_width)
+        readdata = m.Wire('readdata', data_width)
+        zero = m.Wire('zero')
+        memread = m.Wire('memread')
+        memwrite = m.Wire('memwrite')
+        memtoreg = m.Wire('memtoreg')
+        branch = m.Wire('branch')
+        alusrc = m.Wire('alusrc')
+        funct = m.Wire('funct', 10)
+        aluop = m.Wire('aluop', 2)
 
-        m.EmbeddedCode('')
-        jump_add.assign(Cat(pc_4_out[28:32], shl2_jump_out[0:28]))
-
-        m_pc = self.create_pc()
+        m_fetch = self.create_fetch()
         par = []
         con = [
-            ("clk", clk),
-            ("rst", rst),
-            ("pc_in", pc_in),
-            ("pc_out", pc_out)
+            ('clk', clk),
+            ('rst', rst),
+            ('zero', zero),
+            ('branch', branch),
+            ('sigext', sigext),
+            ('inst', inst),
         ]
-        m.Instance(m_pc, m_pc.name, par, con)
+        m.Instance(m_fetch, m_fetch.name, par, con)
 
-        m_add = self.create_decode()
+        m_decode = self.create_decode()
         con = [
-            ("add0_in", pc_out),
-            ("add1_in", Int(4, pc_out.width, 10)),
-            ("add_out", pc_4_out)
+            ('clk', clk),
+            ('inst', inst),
+            ('writedata', writedata),
+            ('data1', data1),
+            ('data2', data2),
+            ('immgen', sigext),
+            ('alusrc', alusrc),
+            ('memread', memread),
+            ('memwrite', memwrite),
+            ('memtoreg', memtoreg),
+            ('branch', branch),
+            ('aluop', aluop),
+            ('funct', funct),
         ]
-        m.Instance(m_add, m_add.name + "4", par, con)
+        m.Instance(m_decode, m_decode.name, par, con)
 
-        m_shl2 = self.create_shift_left_2()
+        m_memory = self.create_memory()
         con = [
-            ("shl2_in", Cat(Int(0, 6, 10), inst_out[0:26])),
-            ("shl2_out", shl2_jump_out)
+            ('clk', clk),
+            ('address', aluout),
+            ('writedata', data2),
+            ('memread', memread),
+            ('memwrite', memwrite),
+            ('readdata', readdata),
         ]
-        m.Instance(m_shl2, m_shl2.name + "_jump", par, con)
+        m.Instance(m_memory, m_memory.name, par, con)
 
-        m_mux21 = self.create_mux21()
+        m_writeback = self.create_writeback()
         con = [
-            ('mux_sel', c_jump),
-            ('mux0_in',),
-            ('mux1_in',),
-            ('mux_out',)
+            ('aluout', aluout),
+            ('readdata', readdata),
+            ('memtoreg', memtoreg),
+            ('writedata', writedata),
         ]
-        m.Instance(m_mux21, m_mux21.name + "_mux_jump", par, con)
+        m.Instance(m_writeback, m_writeback.name, par, con)
 
         return m
 
@@ -93,7 +114,7 @@ class Riscv:
         zero = m.Input('zero')
         branch = m.Input('branch')
         sigext = m.Input('sigext', data_width)
-        inst = m.Output('isnt', data_width)
+        inst = m.Output('inst', data_width)
 
         pc = m.Wire('pc')
         pc_4 = m.Wire('pc_4')
@@ -113,6 +134,17 @@ class Riscv:
             ('pc_out', pc)
         ]
         m.Instance(m_pc, m.name, par, con)
+
+        m_instmem = self.create_memory()
+        con = [
+            ('clk', clk),
+            ('address', pc[2:data_width]),
+            # ('writedata',),
+            ('memread', Int(1, 1, 10)),
+            ('memwrite', Int(0, 1, 10)),
+            ('readdata', inst),
+        ]
+        m.Instance(m_instmem, m_instmem.name, par, con)
 
         self.cache[name] = m
         return m
@@ -491,10 +523,10 @@ class Riscv:
             return self.cache[name]
         m = Module(name)
 
-        alucontrol = m.Input('alucontrol')
-        a = m.Input('a')
-        b = m.Input('b')
-        aluout = m.Output('aluout')
+        alucontrol = m.Input('alucontrol', 4)
+        a = m.Input('a', data_width)
+        b = m.Input('b', data_width)
+        aluout = m.OutputReg('aluout', data_width)
         zero = m.Output('zero')
 
         zero.assign(aluout == 0)
@@ -505,10 +537,60 @@ class Riscv:
         sh = m.Wire('sh', data_width)
         p = m.Wire('p', data_width)
 
-
         m_slt = self.create_slt()
-        
+        par = []
+        con = [
+            ('a', a),
+            ('b', b),
+            ('s', t)
+        ]
+        m.Instance(m_slt, m_slt.name, par, con)
 
+        m_shiftra = self.create_shiftra()
+        con = [
+            ('a', a),
+            ('b', b[0:5]),
+            ('o', sh)
+        ]
+        m.Instance(m_shiftra, m_shiftra.name, par, con)
+
+        m.Always()(
+            Case(alucontrol)(
+                When(Int(0, alucontrol.width, 10))(
+                    aluout(a & b)
+                ),
+                When(Int(1, alucontrol.width, 10))(
+                    aluout(a | b)
+                ),
+                When(Int(2, alucontrol.width, 10))(
+                    aluout(a+b)
+                ),
+                When(Int(3, alucontrol.width, 10))(
+                    aluout(a << b[0:5])
+                ),
+                When(Int(4, alucontrol.width, 10))(
+                    aluout(a ^ b)
+                ),
+                When(Int(5, alucontrol.width, 10))(
+                    aluout(sh)
+                ),
+                When(Int(6, alucontrol.width, 10))(
+                    aluout(a-b)
+                ),
+                When(Int(7, alucontrol.width, 10))(
+                    aluout(t)
+                ),
+                When(Int(8, alucontrol.width, 10))(
+                    aluout(a >> b[0:5])
+                ),
+                When(Int(9, alucontrol.width, 10))(
+                    aluout(a < b)
+                ),
+                When()(
+                    aluout(Int(0, aluout.width, 10))
+                ),
+            )
+        )
 
         self.cache[name] = m
         return m
@@ -521,11 +603,13 @@ class Riscv:
             return self.cache[name]
         m = Module(name)
 
-        
         a = m.Input('a', data_width)
         b = m.Input('b', data_width)
         s = m.Output('s', data_width)
-        
+
+        sub = m.Wire('sub', data_width)
+        sub.assign(a-b)
+        s.assign(Mux(sub[31], Int(1, data_width, 10), Int(0, data_width, 10)))
 
         self.cache[name] = m
         return m
@@ -533,16 +617,74 @@ class Riscv:
     def create_shiftra(self) -> Module:
         data_width = self.data_width
 
-        name = "alu"
+        name = "shiftra"
         if name in self.cache.keys():
             return self.cache[name]
         m = Module(name)
 
-        alucontrol = m.Input('alucontrol')
-        a = m.Input('a')
-        b = m.Input('b')
-        aluout = m.Output('aluout')
-        zero = m.Output('zero')
+        a = m.Input('a', data_width)
+        b = m.Input('b', 5)
+        o = m.Output('o', data_width)
+
+        s = m.Wire('s', data_width)
+        t = m.Wire('t', data_width)
+        _m = m.Wire('m', data_width)
+
+        m.EmbeddedCode('')
+
+        _m.assign(Int((2**data_width)-1, data_width, 2))
+        s.assign(_m >> b)
+        t.assign(a >> b)
+        o.assign(Mux(a[31], (~s | t), t))
+
+        self.cache[name] = m
+        return m
+
+    def create_memory(self) -> Module:
+        data_width = self.data_width
+
+        name = "memory"
+        if name in self.cache.keys():
+            return self.cache[name]
+        m = Module(name)
+
+        clk = m.Input('clk')
+        address = m.Input('address', data_width)
+        writedata = m.Input('writedata', data_width)
+        memread = m.Input('memread')
+        memwrite = m.Input('memwrite')
+        readdata = m.Output('readdata', data_width)
+
+        memory = m.Reg('memory', data_width, 2**self.ram_depth)
+
+        m.EmbeddedCode('')
+
+        readdata.assign(
+            Mux(memread, memory[address[2:data_width]], Int(0, data_width, 10)))
+
+        m.Always(Posedge(clk))(
+            If(memwrite)(
+                memory[address[2:data_width]](writedata)
+            )
+        )
+
+        self.cache[name] = m
+        return m
+
+    def create_writeback(self) -> Module:
+        data_width = self.data_width
+
+        name = "writeback"
+        if name in self.cache.keys():
+            return self.cache[name]
+        m = Module(name)
+
+        aluout = m.Input('aluout', data_width)
+        readdata = m.Input('readdata', data_width)
+        memtoreg = m.Input('memtoreg')
+        writedata = m.Output('writedata', data_width)
+
+        writedata.assign(Mux(memtoreg, readdata, aluout))
 
         self.cache[name] = m
         return m
@@ -550,4 +692,4 @@ class Riscv:
 
 riscv = Riscv()
 # mips.get_riscv().to_verilog('mips.v')
-riscv.create_execute().to_verilog('risc.v')
+riscv.get_riscv().to_verilog('risc.v')
