@@ -33,6 +33,22 @@ class Riscv:
         clk = m.Input("clk")
         rst = m.Input("rst")
 
+        configon = m.Input('configon')
+
+        fetch_configaddr = m.Input('fetch_configaddr', data_width)
+        fetch_clkconfig = m.Input('fetch_clkconfig')
+        fetch_writeinst = m.Input('fetch_writeinst', data_width)
+
+        mem_configaddr = m.Input('mem_configaddr', data_width)
+        mem_clkconfig = m.Input('mem_clkconfig')
+        mem_writedata = m.Input('mem_writedata', data_width)
+        mem_dataout = m.Output('mem_dataout', data_width)
+
+        reg_configaddr = m.Input('reg_configaddr', 5)
+        reg_clkconfig = m.Input('reg_clkconfig')
+        reg_writedata = m.Input('reg_writedata', data_width)
+        reg_dataout = m.Output('reg_dataout', data_width)
+
         writedata = m.Wire('writedata', data_width)
         inst = m.Wire('inst', data_width)
         sigext = m.Wire('sigext', data_width)
@@ -49,6 +65,26 @@ class Riscv:
         funct = m.Wire('funct', 10)
         aluop = m.Wire('aluop', 2)
 
+        m.EmbeddedCode(
+            '// adaptacao para a interface serial controlar a execução do riscV')
+        m.EmbeddedCode('// estágio de memoria')
+        mrd = m.Wire('mrd')
+        mwr = m.Wire('mwr')
+        mclk = m.Wire('mclk')
+        maddr = m.Wire('maddr', data_width)
+        mwrdata = m.Wire('mwrdata', data_width)
+        mrd.assign(Uor(Cat(memread, configon)))
+        mwr.assign(Uor(Cat(memwrite, configon)))
+        mclk.assign(Uor(Cat(clk, mem_clkconfig)))
+        mwrdata.assign(Mux(configon, mem_writedata, data2))
+        maddr.assign(Mux(configon, mem_configaddr, aluout))
+        mem_dataout.assign(readdata)
+        m.EmbeddedCode('//*')
+        m.EmbeddedCode('// estágio de decode')
+        reg_dataout.assign(data1)
+        m.EmbeddedCode('//*')
+        m.EmbeddedCode('//*****')
+
         m_fetch = self.create_fetch()
         par = []
         con = [
@@ -58,6 +94,10 @@ class Riscv:
             ('branch', branch),
             ('sigext', sigext),
             ('inst', inst),
+            ('configon', configon),
+            ('configaddr', fetch_configaddr),
+            ('writeinst', fetch_writeinst),
+            ('clkconfig', fetch_clkconfig),
         ]
         m.Instance(m_fetch, m_fetch.name, par, con)
 
@@ -76,16 +116,20 @@ class Riscv:
             ('branch', branch),
             ('aluop', aluop),
             ('funct', funct),
+            ('configon', configon),
+            ('configaddr', reg_configaddr),
+            ('configwritedata', reg_writedata),
+            ('clkconfig', reg_clkconfig),
         ]
         m.Instance(m_decode, m_decode.name, par, con)
 
         m_memory = self.create_memory()
         con = [
-            ('clk', clk),
-            ('address', aluout),
-            ('writedata', data2),
-            ('memread', memread),
-            ('memwrite', memwrite),
+            ('clk', mclk),
+            ('address', maddr),
+            ('writedata', mwrdata),
+            ('memread', mrd),
+            ('memwrite', mwr),
             ('readdata', readdata),
         ]
         m.Instance(m_memory, m_memory.name, par, con)
@@ -116,14 +160,26 @@ class Riscv:
         sigext = m.Input('sigext', data_width)
         inst = m.Output('inst', data_width)
 
+        configon = m.Input('configon')
+        configaddr = m.Input('configaddr', data_width)
+        writeinst = m.Input('writeinst', data_width)
+        clkconfig = m.Input('clkconfig')
+
         pc = m.Wire('pc')
         pc_4 = m.Wire('pc_4')
         new_pc = m.Wire('new_pc')
+        memclk = m.Wire('memclk')
+        memaddr = m.Wire('memaddr', data_width)
 
         m.EmbeddedCode('')
 
         pc_4.assign(Int(4, data_width, 10) + pc)
         new_pc.assign(Mux(AndList(branch, zero), pc+sigext, pc_4))
+        m.EmbeddedCode(
+            '// adaptacao para a interface serial controlar a execução do riscV')
+        memaddr.assign(Mux(configon, configaddr, pc))
+        memclk.assign(Uor(Cat(clk, clkconfig)))
+        m.EmbeddedCode('//*****')
 
         m_pc = self.create_pc()
         par = []
@@ -137,11 +193,11 @@ class Riscv:
 
         m_instmem = self.create_memory()
         con = [
-            ('clk', clk),
-            ('address', pc[2:data_width]),
-            # ('writedata',),
+            ('clk', memclk),
+            ('address', memaddr),
+            ('writedata', writeinst),
             ('memread', Int(1, 1, 10)),
-            ('memwrite', Int(0, 1, 10)),
+            ('memwrite', configon),
             ('readdata', inst),
         ]
         m.Instance(m_instmem, m_instmem.name, par, con)
@@ -194,6 +250,11 @@ class Riscv:
         aluop = m.Output('aluop', 2)
         funct = m.Output('funct', 10)
 
+        configon = m.Input('configon')
+        configaddr = m.Input('configaddr', 5)
+        clkconfig = m.Input('clkconfig')
+        configwritedata = m.Input('configwritedata', data_width)
+
         regwrite = m.Wire('regwrite')
         writereg = m.Wire('writereg', reg_add_width)
         rs1 = m.Wire('rs1', reg_add_width)
@@ -211,6 +272,20 @@ class Riscv:
         funct7.assign(inst[25:32])
         funct3.assign(inst[12:15])
         funct.assign(inst[Cat(funct7, funct3)])
+
+        m.EmbeddedCode(
+            '// adaptacao para a interface serial controlar a execução do riscV')
+        rwr = m.Wire('rwr')
+        rclk = m.Wire('rclk')
+        rwaddr = m.Wire('rwaddr', 5)
+        rwrdata = m.Wire('rwrdata', data_width)
+        rraddr = m.Wire('raddr', 5)
+        rwr.assign(Uor(Cat(regwrite, configon)))
+        rclk.assign(Uor(Cat(clk, clkconfig)))
+        rwaddr.assign(Mux(configon, configaddr, rs1))
+        rraddr.assign(Mux(configon, configaddr, rd))
+        rwrdata.assign(Mux(configon, configwritedata, writedata))
+        m.EmbeddedCode('// *****')
 
         m_uc = self.create_control_unit()
         par = []
@@ -231,11 +306,11 @@ class Riscv:
         m_reg_bank = self.create_register_bank()
         con = [
             ('clk', clk),
-            ('regwrite', regwrite),
-            ('read_reg1', rs1),
+            ('regwrite', rwr),
+            ('read_reg1', rwaddr),
             ('read_reg2', rs2),
-            ('write_reg', rd),
-            ('writedata', writedata),
+            ('write_reg', rraddr),
+            ('writedata', rwrdata),
             ('read_data1', data1),
             ('read_data2', data2),
         ]
@@ -690,6 +765,4 @@ class Riscv:
         return m
 
 
-riscv = Riscv()
-# mips.get_riscv().to_verilog('mips.v')
-riscv.get_riscv().to_verilog('risc.v')
+

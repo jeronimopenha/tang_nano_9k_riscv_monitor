@@ -3,7 +3,19 @@
 module riscv_rd_5_ird_6
 (
   input clk,
-  input rst
+  input rst,
+  input configon,
+  input [32-1:0] fetch_configaddr,
+  input fetch_clkconfig,
+  input [32-1:0] fetch_writeinst,
+  input [32-1:0] mem_configaddr,
+  input mem_clkconfig,
+  input [32-1:0] mem_writedata,
+  output [32-1:0] mem_dataout,
+  input [5-1:0] reg_configaddr,
+  input reg_clkconfig,
+  input [32-1:0] reg_writedata,
+  output [32-1:0] reg_dataout
 );
 
   wire [32-1:0] writedata;
@@ -21,6 +33,24 @@ module riscv_rd_5_ird_6
   wire alusrc;
   wire [10-1:0] funct;
   wire [2-1:0] aluop;
+  // adaptacao para a interface serial controlar a execução do riscV
+  // estágio de memoria
+  wire mrd;
+  wire mwr;
+  wire mclk;
+  wire [32-1:0] maddr;
+  wire [32-1:0] mwrdata;
+  assign mrd = |{ memread, configon };
+  assign mwr = |{ memwrite, configon };
+  assign mclk = |{ clk, mem_clkconfig };
+  assign mwrdata = (configon)? mem_writedata : data2;
+  assign maddr = (configon)? mem_configaddr : aluout;
+  assign mem_dataout = readdata;
+  //*
+  // estágio de decode
+  assign reg_dataout = data1;
+  //*
+  //*****
 
   fetch
   fetch
@@ -30,7 +60,11 @@ module riscv_rd_5_ird_6
     .zero(zero),
     .branch(branch),
     .sigext(sigext),
-    .inst(inst)
+    .inst(inst),
+    .configon(configon),
+    .configaddr(fetch_configaddr),
+    .writeinst(fetch_writeinst),
+    .clkconfig(fetch_clkconfig)
   );
 
 
@@ -49,18 +83,22 @@ module riscv_rd_5_ird_6
     .memtoreg(memtoreg),
     .branch(branch),
     .aluop(aluop),
-    .funct(funct)
+    .funct(funct),
+    .configon(configon),
+    .configaddr(reg_configaddr),
+    .configwritedata(reg_writedata),
+    .clkconfig(reg_clkconfig)
   );
 
 
   memory
   memory
   (
-    .clk(clk),
-    .address(aluout),
-    .writedata(data2),
-    .memread(memread),
-    .memwrite(memwrite),
+    .clk(mclk),
+    .address(maddr),
+    .writedata(mwrdata),
+    .memread(mrd),
+    .memwrite(mwr),
     .readdata(readdata)
   );
 
@@ -86,15 +124,25 @@ module fetch
   input zero,
   input branch,
   input [32-1:0] sigext,
-  output [32-1:0] inst
+  output [32-1:0] inst,
+  input configon,
+  input [32-1:0] configaddr,
+  input [32-1:0] writeinst,
+  input clkconfig
 );
 
   wire pc;
   wire pc_4;
   wire new_pc;
+  wire memclk;
+  wire [32-1:0] memaddr;
 
   assign pc_4 = 32'd4 + pc;
   assign new_pc = (branch && zero)? pc + sigext : pc_4;
+  // adaptacao para a interface serial controlar a execução do riscV
+  assign memaddr = (configon)? configaddr : pc;
+  assign memclk = |{ clk, clkconfig };
+  //*****
 
   pc
   fetch
@@ -109,10 +157,11 @@ module fetch
   memory
   memory
   (
-    .clk(clk),
-    .address(pc[31:2]),
+    .clk(memclk),
+    .address(memaddr),
+    .writedata(writeinst),
     .memread(1'd1),
-    .memwrite(1'd0),
+    .memwrite(configon),
     .readdata(inst)
   );
 
@@ -181,7 +230,11 @@ module decode
   output memtoreg,
   output branch,
   output [2-1:0] aluop,
-  output [10-1:0] funct
+  output [10-1:0] funct,
+  input configon,
+  input [5-1:0] configaddr,
+  input clkconfig,
+  input [32-1:0] configwritedata
 );
 
   wire regwrite;
@@ -200,6 +253,18 @@ module decode
   assign funct7 = inst[31:25];
   assign funct3 = inst[14:12];
   assign funct = inst[{ funct7, funct3 }];
+  // adaptacao para a interface serial controlar a execução do riscV
+  wire rwr;
+  wire rclk;
+  wire [5-1:0] rwaddr;
+  wire [32-1:0] rwrdata;
+  wire [5-1:0] raddr;
+  assign rwr = |{ regwrite, configon };
+  assign rclk = |{ clk, clkconfig };
+  assign rwaddr = (configon)? configaddr : rs1;
+  assign raddr = (configon)? configaddr : rd;
+  assign rwrdata = (configon)? configwritedata : writedata;
+  // *****
 
   control_unit
   control_unit
@@ -221,11 +286,11 @@ module decode
   register_bank
   (
     .clk(clk),
-    .regwrite(regwrite),
-    .read_reg1(rs1),
+    .regwrite(rwr),
+    .read_reg1(rwaddr),
     .read_reg2(rs2),
-    .write_reg(rd),
-    .writedata(writedata),
+    .write_reg(raddr),
+    .writedata(rwrdata),
     .read_data1(data1),
     .read_data2(data2)
   );
