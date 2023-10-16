@@ -1,5 +1,4 @@
 from veriloggen import *
-from math import ceil, log2
 
 import util as _u
 
@@ -33,20 +32,16 @@ class Riscv:
         clk = m.Input("clk")
         rst = m.Input("rst")
 
-        configon = m.Input('configon')
+        config_on = m.Input('config_on')
+        config_addr = m.Input('config_addr', data_width)
+        config_writedata = m.Input('config_writedata', data_width)
 
-        fetch_configaddr = m.Input('fetch_configaddr', data_width)
         fetch_clkconfig = m.Input('fetch_clkconfig')
-        fetch_writeinst = m.Input('fetch_writeinst', data_width)
 
-        mem_configaddr = m.Input('mem_configaddr', data_width)
         mem_clkconfig = m.Input('mem_clkconfig')
-        mem_writedata = m.Input('mem_writedata', data_width)
         mem_dataout = m.Output('mem_dataout', data_width)
 
-        reg_configaddr = m.Input('reg_configaddr', 5)
         reg_clkconfig = m.Input('reg_clkconfig')
-        reg_writedata = m.Input('reg_writedata', data_width)
         reg_dataout = m.Output('reg_dataout', data_width)
 
         writedata = m.Wire('writedata', data_width)
@@ -73,11 +68,11 @@ class Riscv:
         mclk = m.Wire('mclk')
         maddr = m.Wire('maddr', data_width)
         mwrdata = m.Wire('mwrdata', data_width)
-        mrd.assign(Uor(Cat(memread, configon)))
-        mwr.assign(Uor(Cat(memwrite, configon)))
+        mrd.assign(Uor(Cat(memread, config_on)))
+        mwr.assign(Uor(Cat(memwrite, config_on)))
         mclk.assign(Uor(Cat(clk, mem_clkconfig)))
-        mwrdata.assign(Mux(configon, mem_writedata, data2))
-        maddr.assign(Mux(configon, mem_configaddr, aluout))
+        mwrdata.assign(Mux(config_on, config_writedata, data2))
+        maddr.assign(Mux(config_on, config_addr, aluout))
         mem_dataout.assign(readdata)
         m.EmbeddedCode('//*')
         m.EmbeddedCode('// estágio de decode')
@@ -94,9 +89,9 @@ class Riscv:
             ('branch', branch),
             ('sigext', sigext),
             ('inst', inst),
-            ('configon', configon),
-            ('configaddr', fetch_configaddr),
-            ('writeinst', fetch_writeinst),
+            ('configon', config_on),
+            ('configaddr', config_addr),
+            ('writeinst', config_writedata),
             ('clkconfig', fetch_clkconfig),
         ]
         m.Instance(m_fetch, m_fetch.name, par, con)
@@ -116,9 +111,9 @@ class Riscv:
             ('branch', branch),
             ('aluop', aluop),
             ('funct', funct),
-            ('configon', configon),
-            ('configaddr', reg_configaddr),
-            ('configwritedata', reg_writedata),
+            ('configon', config_on),
+            ('configaddr', config_addr[0:5]),
+            ('configwritedata', config_writedata),
             ('clkconfig', reg_clkconfig),
         ]
         m.Instance(m_decode, m_decode.name, par, con)
@@ -143,6 +138,7 @@ class Riscv:
         ]
         m.Instance(m_writeback, m_writeback.name, par, con)
 
+        _u.initialize_regs(m)
         return m
 
     def create_fetch(self) -> Module:
@@ -202,6 +198,8 @@ class Riscv:
         ]
         m.Instance(m_instmem, m_instmem.name, par, con)
 
+        _u.initialize_regs(m)
+
         self.cache[name] = m
         return m
 
@@ -225,6 +223,9 @@ class Riscv:
             )
         )
         self.cache[name] = m
+
+        _u.initialize_regs(m)
+
         return m
 
     def create_decode(self) -> Module:
@@ -316,6 +317,8 @@ class Riscv:
         ]
         m.Instance(m_reg_bank, m_reg_bank.name, par, con)
 
+        _u.initialize_regs(m)
+
         self.cache[name] = m
         return m
 
@@ -386,6 +389,8 @@ class Riscv:
 
         )
 
+        _u.initialize_regs(m)
+
         self.cache[name] = m
         return m
 
@@ -422,6 +427,9 @@ class Riscv:
         )
 
         self.cache[name] = m
+
+        # _u.initialize_regs(m)
+
         return m
 
     def create_execute(self) -> Module:
@@ -483,6 +491,8 @@ class Riscv:
             ('zero', zero1),
         ]
         m.Instance(m_alu, m_alu.name, par, con)
+
+        _u.initialize_regs(m)
 
         self.cache[name] = m
         return m
@@ -588,6 +598,9 @@ class Riscv:
         )
 
         self.cache[name] = m
+
+        _u.initialize_regs(m)
+
         return m
 
     def create_alu(self) -> Module:
@@ -668,6 +681,9 @@ class Riscv:
         )
 
         self.cache[name] = m
+
+        _u.initialize_regs(m)
+
         return m
 
     def create_slt(self) -> Module:
@@ -687,6 +703,9 @@ class Riscv:
         s.assign(Mux(sub[31], Int(1, data_width, 10), Int(0, data_width, 10)))
 
         self.cache[name] = m
+
+        _u.initialize_regs(m)
+
         return m
 
     def create_shiftra(self) -> Module:
@@ -713,6 +732,9 @@ class Riscv:
         o.assign(Mux(a[31], (~s | t), t))
 
         self.cache[name] = m
+
+        _u.initialize_regs(m)
+
         return m
 
     def create_memory(self) -> Module:
@@ -744,6 +766,9 @@ class Riscv:
         )
 
         self.cache[name] = m
+
+        # _u.initialize_regs(m)
+
         return m
 
     def create_writeback(self) -> Module:
@@ -762,7 +787,7 @@ class Riscv:
         writedata.assign(Mux(memtoreg, readdata, aluout))
 
         self.cache[name] = m
+
+        _u.initialize_regs(m)
+
         return m
-
-
-

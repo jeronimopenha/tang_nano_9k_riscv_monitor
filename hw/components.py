@@ -9,18 +9,21 @@ class Components:
 
     def __init__(
             self,
-            data_width: int = 8,
-            n_channel: int = 1,
+            data_width: int = 32,
+            ram_depth: int = 5,
+            inst_ram_depth: int = 6,
+            serial_width: int = 8,
             fifo_depth: int = 2
     ):
         self.data_width = data_width
-        self.n_channel = n_channel
-        self.fifo_depth = fifo_depth
+        self.ram_depth = ram_depth
+        self.inst_ram_depth = inst_ram_depth
+        self.serial_width = 8
+        self.fifo_depth = 2
         self.cache = {}
 
     def create_fifo(self) -> Module:
         data_width = self.data_width
-        n_channel = self.n_channel
         fifo_depth = self.fifo_depth
 
         name = 'fifo'
@@ -420,12 +423,11 @@ class Components:
 endmodule
         '''
 
-    def create_io_controller(self) -> Module:
+    def create_io_riscv_controller(self) -> Module:
         data_width = self.data_width
-        n_channel = self.n_channel
         fifo_depth = self.fifo_depth
 
-        name = "io_protocol_controller"
+        name = "io_riscv_controller"
         if name in self.cache.keys():
             return self.cache[name]
         m = Module(name)
@@ -433,11 +435,9 @@ endmodule
         rst = m.Input('rst')
         rx = m.Input('rx')
         tx = m.Output('tx')
-        sw_rst = m.OutputReg('sw_rst')
-        start = m.OutputReg('start')
 
-        m.EmbeddedCode('// Interface info to send, n_channel')
-        INFO_TO_SEND = m.Localparam('INFO_TO_SEND', Int(n_channel, 8, 10), 8)
+        sw_rst = m.Reg('sw_rst')
+        sw_clk = m.Reg('sw_clk')
 
         m.EmbeddedCode('')
         m.EmbeddedCode('// Instantiate the RX controller')
@@ -465,32 +465,25 @@ endmodule
         rx_fifo_in_data.assign(rx_data_out)
 
         m.EmbeddedCode('')
+        '''
+            PC->board
+            0x00    reset 8b
+            0x01    send config - 8b + qtde inst + insts + qtde reg + regs + qtde mem + mems
+            0x02    exec clock - 8b + n_clocks
+
+            board->pc
+            0x00    send data 8b + qtde inst + insts + qtde reg + regs + qtde mem + mems
+        '''
         m.EmbeddedCode('// PC to board protocol')
-        PROT_PC_B_REQ_INFO = m.Localparam(
-            'PROT_PC_B_REQ_INFO', Int(0, 8, 16), 8)
-        PROT_PC_B_RESET = m.Localparam('PROT_PC_B_RESET', Int(1, 8, 16), 8)
+        PROT_PC_B_RESET = m.Localparam('PROT_PC_B_RESET', Int(0, 8, 16), 8)
         PROT_PC_B_SEND_CONFIG = m.Localparam(
-            'PROT_PC_B_SEND_CONFIG', Int(2, 8, 16), 8)
-        PROT_PC_B_START = m.Localparam('PROT_PC_B_START', Int(3, 8, 16), 8)
-        PROT_PC_B_SEND_DATA = m.Localparam(
-            'PROT_PC_B_SEND_DATA', Int(4, 8, 16), 8)
+            'PROT_PC_B_SEND_CONFIG', Int(1, 8, 16), 8)
+        PROT_PC_B_CLOCK = m.Localparam('PROT_PC_B_CLOCK', Int(2, 8, 16), 8)
 
         m.EmbeddedCode('')
         m.EmbeddedCode('// Board to PC protocol')
-        PROT_B_PC_SEND_INFO = m.Localparam(
-            'PROT_B_PC_SEND_INFO', Int(0, 8, 16), 8)
-        PROT_B_PC_RESETED = m.Localparam('PROT_B_PC_RESETED', Int(1, 8, 16), 8)
-        PROT_B_PC_CONF_RECEIVED = m.Localparam(
-            'PROT_B_PC_CONF_RECEIVED', Int(2, 8, 16), 8)
-        PROT_B_PC_STARTED = m.Localparam('PROT_B_PC_STARTED', Int(3, 8, 16), 8)
-        PROT_B_PC_REQ_DATA = m.Localparam(
-            'PROT_B_PC_REQ_DATA', Int(4, 8, 16), 8)
         PROT_B_PC_SEND_DATA = m.Localparam(
-            'PROT_B_PC_SEND_DATA', Int(5, 8, 16), 8)
-        PROT_B_PC_DONE_RD = m.Localparam('PROT_B_PC_DONE_RD', Int(6, 8, 16), 8)
-        PROT_B_PC_DONE_WR = m.Localparam('PROT_B_PC_DONE_WR', Int(7, 8, 16), 8)
-        PROT_B_PC_DONE_ACC = m.Localparam(
-            'PROT_B_PC_DONE_ACC', Int(8, 8, 16), 8)
+            'PROT_B_PC_SEND_DATA', Int(0, 8, 16), 8)
 
         m.EmbeddedCode('')
         m.EmbeddedCode('// IO and protocol controller')
@@ -500,30 +493,30 @@ endmodule
             'FSM_IDLE', Int(0, fsm_io.width, 16), fsm_io.width)
         FSM_DECODE_PROTOCOL = m.Localparam(
             'FSM_DECODE_PROTOCOL', Int(1, fsm_io.width, 16), fsm_io.width)
-        FSM_SEND_INFO = m.Localparam(
-            'FSM_SEND_INFO', Int(2, fsm_io.width, 16), fsm_io.width)
         FSM_RESET = m.Localparam(
-            'FSM_RESET', Int(3, fsm_io.width, 16), fsm_io.width)
-        FSM_SEND_CONFIG = m.Localparam(
-            'FSM_SEND_CONFIG', Int(4, fsm_io.width, 16), fsm_io.width)
-        FSM_START_ACC = m.Localparam(
-            'FSM_START_ACC', Int(5, fsm_io.width, 16), fsm_io.width)
-        # FSM_START_ACK = m.Localparam(
-        #    'FSM_START_ACK', Int(6, fsm_io.width, 16), fsm_io.width)
-        FSM_MOVE_DATA_TO_ACC = m.Localparam(
-            'FSM_MOVE_DATA_TO_ACC', Int(6, fsm_io.width, 16), fsm_io.width)
+            'FSM_RESET', Int(2, fsm_io.width, 16), fsm_io.width)
+        FSM_RECEIVE_CONFIG = m.Localparam(
+            'FSM_RECEIVE_CONFIG', Int(3, fsm_io.width, 16), fsm_io.width)
+        FSM_EXEC_CLOCK = m.Localparam(
+            'FSM_EXEC_CLOCK', Int(4, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_DATA = m.Localparam(
+            'FSM_SEND_DATA', Int(5, fsm_io.width, 16), fsm_io.width)
+
+        counter = m.Reg('counter', 8)
 
         m.Always(Posedge(clk))(
             If(rst)(
                 fsm_io(FSM_IDLE),
                 rx_fifo_re(Int(0, 1, 2)),
-                sw_rst(0),
-                tx_send_trig(0),
-                start(0),
+                sw_rst(Int(1, 1, 2)),
+                sw_clk(Int(0, 1, 2)),
+                tx_send_trig(Int(0, 1, 2)),
+                counter(Int(0, counter.width, 10))
             ).Else(
                 rx_fifo_re(Int(0, 1, 2)),
-                sw_rst(0),
-                tx_send_trig(0),
+                sw_rst(Int(1, 1, 2)),
+                sw_clk(Int(0, 1, 2)),
+                tx_send_trig(Int(0, 1, 2)),
                 Case(fsm_io)(
                     When(FSM_IDLE)(
                         If(~rx_fifo_empty)(
@@ -534,55 +527,53 @@ endmodule
                     When(FSM_DECODE_PROTOCOL)(
                         If(rx_fifo_out_valid)(
                             Case(rx_fifo_out_data)(
-                                When(PROT_PC_B_REQ_INFO)(
-                                    fsm_io(FSM_IDLE)
-                                ),
                                 When(PROT_PC_B_RESET)(
                                     fsm_io(FSM_RESET)
                                 ),
                                 When(PROT_PC_B_SEND_CONFIG)(
                                     fsm_io(FSM_IDLE)
                                 ),
-                                When(PROT_PC_B_START)(
-                                    fsm_io(FSM_START_ACC)
+                                When(PROT_PC_B_CLOCK)(
+                                    fsm_io(FSM_EXEC_CLOCK)
                                 ),
-                                When(PROT_PC_B_SEND_DATA)(
+                                When()(
                                     fsm_io(FSM_IDLE)
                                 ),
                             ),
                         )
                     ),
-                    When(FSM_SEND_INFO)(
-                        # TODO
-                    ),
                     When(FSM_RESET)(
-                        If(~tx_bsy)(
-                            tx_send_trig(1),
-                            tx_send_data(PROT_B_PC_RESETED),
-                            sw_rst(~sw_rst),
-                            fsm_io(FSM_IDLE)
-                        )
+                        sw_rst(Int(0, 1, 2)),
+                        fsm_io(FSM_IDLE)
                     ),
-                    When(FSM_SEND_CONFIG)(
-
+                    When(FSM_EXEC_CLOCK)(
+                        sw_clk(Int(1, 1, 2)),
+                        fsm_io(FSM_SEND_DATA)
                     ),
-                    When(FSM_START_ACC)(
+                    When(FSM_SEND_DATA)(
                         If(~tx_bsy)(
+                            counter(counter + Int(1, counter.width, 10)),
                             tx_send_trig(1),
-                            tx_send_data(PROT_B_PC_STARTED),
-                            start(~start),
+                            tx_send_data(counter),
                             fsm_io(FSM_IDLE)
                         ),
                     ),
-
-                    When(FSM_MOVE_DATA_TO_ACC)(
-
-                    ),
+                    When()(
+                        fsm_io(FSM_IDLE)
+                    )
                 )
             )
         )
+        '''
+            If(~tx_bsy)(
+                tx_send_trig(1),
+                tx_send_data(PROT_B_PC_STARTED),
+                start(~start),
+                fsm_io(FSM_IDLE)
+            ),
+        '''
 
-        aux = self.create_fifo()
+        m_aux = self.create_fifo()
         par = [
             ('FIFO_WIDTH', 8),
             ('FIFO_DEPTH_BITS', 5)
@@ -597,9 +588,9 @@ endmodule
             ('out_data', rx_fifo_out_data),
             ('empty', rx_fifo_empty)
         ]
-        m.Instance(aux, 'rx_%s' % aux.name, par, con)
+        m.Instance(m_aux, 'rx_%s' % m_aux.name, par, con)
 
-        aux = self.create_uart_rx()
+        m_aux = self.create_uart_rx()
         par = []
         con = [
             ('clk', clk),
@@ -610,9 +601,9 @@ endmodule
             ('data_valid', rx_data_valid),
             ('data_out', rx_data_out)
         ]
-        m.Instance(aux, aux.name, par, con)
+        m.Instance(m_aux, m_aux.name, par, con)
 
-        aux = self.create_uart_tx()
+        m_aux = self.create_uart_tx()
         par = []
         con = [
             ('clk', clk),
@@ -622,11 +613,11 @@ endmodule
             ('tx', tx),
             ('tx_bsy', tx_bsy),
         ]
-        m.Instance(aux, aux.name, par, con)
+        m.Instance(m_aux, m_aux.name, par, con)
 
-        _u.initialize_regs(m, {'tx': 1})
+        _u.initialize_regs(m, {'tx': 1, 'sw_rst': 1})
         return m
 
 
 cmp = Components()
-cmp.create_io_controller().to_verilog('io_controller.v')
+cmp.create_io_riscv_controller().to_verilog('io_controller.v')
