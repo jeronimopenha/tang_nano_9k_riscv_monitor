@@ -22,25 +22,12 @@ class Interface:
         return self.__create_interface()
 
     '''
-    Base word of 64b for data transf
-    Max data transfer width = 4MB
-
-    PC->board
-    0x00    reset 8b
-    0x01    send config - 8b + qtde inst + insts + qtde reg + regs + qtde mem + mems
-    0x02    exec clock - 8b + n_clocks
-
-    board->pc
-    0x00    send data 8b + qtde inst + insts + qtde reg + regs + qtde mem + mems
-    
-    '''
-    '''
     led[0] - rx
     led[1] - rx_bsy
     led[2] - tx
     led[3] - tx_bsy
     led[4] - rst
-    led[5] - desligado
+    led[5] - running
     '''
 
     def __create_interface(self) -> Module:
@@ -99,7 +86,9 @@ class Interface:
             ('clk', clk),
             ('rst', ~btn_rst),
             ('rx', uart_rx),
-            ('tx', uart_tx)
+            ('rx_bsy', rx_bsy),
+            ('tx', uart_tx),
+            ('tx_bsy', tx_bsy),
         ]
         m.Instance(m_aux, m_aux.name, par, con)
 

@@ -1,0 +1,11 @@
+-d /home/jeronimo/Documents/tang_projects/fpga_project/impl/gwsynthesis/fpga_project.vg
+-p GW1NR-9C-QFN88P-6
+-pn GW1NR-LV9QN88PC6/I5
+-cst /home/jeronimo/Documents/tang_projects/fpga_project/src/fpga_project.cst
+-cfg /home/jeronimo/Documents/tang_projects/fpga_project/impl/pnr/device.cfg
+-bit
+-tr
+-ph
+-timing
+-cst_error
+-route_maxfan 23

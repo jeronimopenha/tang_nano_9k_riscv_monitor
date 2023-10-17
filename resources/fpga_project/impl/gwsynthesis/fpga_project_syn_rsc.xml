@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module name="tang_nano_9k_riscv_monitor" Lut="3">
+ <SubModule name="io_riscv_controller" Register="25" Lut="59">
+  <SubModule name="rx_fifo" Register="27" Alu="14" Lut="22" Ssram="4"/>
+  <SubModule name="uart_rx" Register="20" Alu="7" Lut="35"/>
+  <SubModule name="uart_tx" Register="18" Alu="7" Lut="32"/>
+  <SubModule name="riscv_rd_5_ird_6" Lut="4">
+   <SubModule name="fetch" Lut="19">
+    <SubModule name="fetch" Register="5"/>
+   </SubModule>
+   <SubModule name="decode" Lut="8">
+    <SubModule name="control_unit" Lut="2"/>
+    <SubModule name="register_bank" Lut="8" Ssram="6"/>
+   </SubModule>
+   <SubModule name="execute" Lut="9">
+    <SubModule name="alucontrol" Lut="2"/>
+    <SubModule name="alu" Alu="8"/>
+   </SubModule>
+   <SubModule name="memory" Ssram="4"/>
+  </SubModule>
+ </SubModule>
+</Module>

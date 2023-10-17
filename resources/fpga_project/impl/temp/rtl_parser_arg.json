@@ -1,0 +1,16 @@
+{
+ "Files" : [
+  {
+   "Path" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+   "Type" : "verilog"
+  }
+ ],
+ "IncludePath" : [
+
+ ],
+ "LoopLimit" : 2000,
+ "ResultFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/impl/temp/rtl_parser.result",
+ "Top" : "",
+ "VerilogStd" : "verilog_2001",
+ "VhdlStd" : "vhdl_93"
+}

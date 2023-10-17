@@ -1,0 +1,160 @@
+[
+ {
+  "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+  "InstLine" : 3,
+  "InstName" : "tang_nano_9k_riscv_monitor",
+  "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+  "ModuleLine" : 3,
+  "ModuleName" : "tang_nano_9k_riscv_monitor",
+  "SubInsts" : [
+   {
+    "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+    "InstLine" : 41,
+    "InstName" : "io_riscv_controller",
+    "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+    "ModuleLine" : 56,
+    "ModuleName" : "io_riscv_controller",
+    "SubInsts" : [
+     {
+      "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "InstLine" : 219,
+      "InstName" : "rx_fifo",
+      "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "ModuleLine" : 285,
+      "ModuleName" : "fifo"
+     },
+     {
+      "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "InstLine" : 233,
+      "InstName" : "uart_rx",
+      "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "ModuleLine" : 383,
+      "ModuleName" : "uart_rx"
+     },
+     {
+      "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "InstLine" : 246,
+      "InstName" : "uart_tx",
+      "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "ModuleLine" : 568,
+      "ModuleName" : "uart_tx"
+     },
+     {
+      "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "InstLine" : 258,
+      "InstName" : "riscv_rd_5_ird_6",
+      "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+      "ModuleLine" : 696,
+      "ModuleName" : "riscv_rd_5_ird_6",
+      "SubInsts" : [
+       {
+        "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "InstLine" : 735,
+        "InstName" : "fetch",
+        "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "ModuleLine" : 807,
+        "ModuleName" : "fetch",
+        "SubInsts" : [
+         {
+          "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "InstLine" : 825,
+          "InstName" : "fetch",
+          "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "ModuleLine" : 877,
+          "ModuleName" : "pc"
+         }
+        ]
+       },
+       {
+        "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "InstLine" : 747,
+        "InstName" : "decode",
+        "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "ModuleLine" : 903,
+        "ModuleName" : "decode",
+        "SubInsts" : [
+         {
+          "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "InstLine" : 943,
+          "InstName" : "control_unit",
+          "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "ModuleLine" : 976,
+          "ModuleName" : "control_unit"
+         },
+         {
+          "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "InstLine" : 959,
+          "InstName" : "register_bank",
+          "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "ModuleLine" : 1051,
+          "ModuleName" : "register_bank"
+         }
+        ]
+       },
+       {
+        "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "InstLine" : 768,
+        "InstName" : "execute",
+        "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "ModuleLine" : 1087,
+        "ModuleName" : "execute",
+        "SubInsts" : [
+         {
+          "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "InstLine" : 1114,
+          "InstName" : "alucontrol",
+          "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "ModuleLine" : 1137,
+          "ModuleName" : "alucontrol"
+         },
+         {
+          "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "InstLine" : 1123,
+          "InstName" : "alu",
+          "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+          "ModuleLine" : 1235,
+          "ModuleName" : "alu",
+          "SubInsts" : [
+           {
+            "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+            "InstLine" : 1251,
+            "InstName" : "slt",
+            "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+            "ModuleLine" : 1316,
+            "ModuleName" : "slt"
+           },
+           {
+            "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+            "InstLine" : 1260,
+            "InstName" : "shiftra",
+            "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+            "ModuleLine" : 1331,
+            "ModuleName" : "shiftra"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "InstLine" : 782,
+        "InstName" : "memory",
+        "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "ModuleLine" : 1351,
+        "ModuleName" : "memory"
+       },
+       {
+        "InstFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "InstLine" : 794,
+        "InstName" : "writeback",
+        "ModuleFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+        "ModuleLine" : 1376,
+        "ModuleName" : "writeback"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+]

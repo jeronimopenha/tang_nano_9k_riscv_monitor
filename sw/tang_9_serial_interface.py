@@ -29,7 +29,8 @@ class UartInterface:
         self.stop_flag = False
         self.start_flag = True
         self.port.reset_input_buffer()
-        time.sleep(0.0005)
+        self.port.reset_output_buffer()
+        time.sleep(0.005)
         #self.listener = threading.Thread(target=self.listener_routine, args=[1,])
         self.listener.start()
 

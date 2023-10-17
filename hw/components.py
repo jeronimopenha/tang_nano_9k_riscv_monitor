@@ -1,5 +1,6 @@
 from veriloggen import *
 from math import ceil, log2
+from riscv import Riscv
 
 import util as _u
 
@@ -426,6 +427,8 @@ endmodule
     def create_io_riscv_controller(self) -> Module:
         data_width = self.data_width
         fifo_depth = self.fifo_depth
+        riscv = Riscv()
+        monitor_tam = 32
 
         name = "io_riscv_controller"
         if name in self.cache.keys():
@@ -434,14 +437,15 @@ endmodule
         clk = m.Input('clk')
         rst = m.Input('rst')
         rx = m.Input('rx')
+        rx_bsy = m.Output('rx_bsy')
         tx = m.Output('tx')
+        tx_bsy = m.Output('tx_bsy')
 
-        sw_rst = m.Reg('sw_rst')
-        sw_clk = m.Reg('sw_clk')
+        risc_rst = m.Reg('risc_rst')
+        risc_clk = m.Reg('risc_clk')
 
         m.EmbeddedCode('')
         m.EmbeddedCode('// Instantiate the RX controller')
-        rx_bsy = m.Wire('rx_bsy')
         rx_block_timeout = m.Wire('rx_block_timeout')
         rx_data_valid = m.Wire('rx_data_valid')
         rx_data_out = m.Wire('rx_data_out', 8)
@@ -450,7 +454,6 @@ endmodule
         m.EmbeddedCode('// Instantiate the TX controller')
         tx_send_trig = m.Reg('send_trig')
         tx_send_data = m.Reg('send_data', 8)
-        tx_bsy = m.Wire('tx_bsy')
 
         m.EmbeddedCode('')
         m.EmbeddedCode('// Instantiate the RX fifo')
@@ -463,31 +466,27 @@ endmodule
         m.EmbeddedCode('// The Rx fifo is controlled by the uart_rx module')
         rx_fifo_we.assign(rx_data_valid)
         rx_fifo_in_data.assign(rx_data_out)
+        m.EmbeddedCode('')
+
+        m.EmbeddedCode('// Config and read data from riscv')
+        monitor_addr = m.Reg('monitor_addr', 8)
+        monitor_read_on = m.Reg('config_on')
+        mem_dataout = m.Wire('mem_dataout', 8)
+        reg_dataout = m.Wire('reg_dataout', 8)
 
         m.EmbeddedCode('')
         '''
             PC->board
             0x00    reset 8b
-            0x01    send config - 8b + qtde inst + insts + qtde reg + regs + qtde mem + mems
-            0x02    exec clock - 8b + n_clocks
-
-            board->pc
-            0x00    send data 8b + qtde inst + insts + qtde reg + regs + qtde mem + mems
+            0x01    exec clock - 8b + n_clocks
+            
         '''
         m.EmbeddedCode('// PC to board protocol')
         PROT_PC_B_RESET = m.Localparam('PROT_PC_B_RESET', Int(0, 8, 16), 8)
-        PROT_PC_B_SEND_CONFIG = m.Localparam(
-            'PROT_PC_B_SEND_CONFIG', Int(1, 8, 16), 8)
-        PROT_PC_B_CLOCK = m.Localparam('PROT_PC_B_CLOCK', Int(2, 8, 16), 8)
-
-        m.EmbeddedCode('')
-        m.EmbeddedCode('// Board to PC protocol')
-        PROT_B_PC_SEND_DATA = m.Localparam(
-            'PROT_B_PC_SEND_DATA', Int(0, 8, 16), 8)
+        PROT_PC_B_CLOCK = m.Localparam('PROT_PC_B_CLOCK', Int(1, 8, 16), 8)
 
         m.EmbeddedCode('')
         m.EmbeddedCode('// IO and protocol controller')
-        fsm_io_send_data = m.Reg('fsm_io_send_data', 8)
         fsm_io = m.Reg('fsm_io', 4)
         FSM_IDLE = m.Localparam(
             'FSM_IDLE', Int(0, fsm_io.width, 16), fsm_io.width)
@@ -495,27 +494,33 @@ endmodule
             'FSM_DECODE_PROTOCOL', Int(1, fsm_io.width, 16), fsm_io.width)
         FSM_RESET = m.Localparam(
             'FSM_RESET', Int(2, fsm_io.width, 16), fsm_io.width)
-        FSM_RECEIVE_CONFIG = m.Localparam(
-            'FSM_RECEIVE_CONFIG', Int(3, fsm_io.width, 16), fsm_io.width)
         FSM_EXEC_CLOCK = m.Localparam(
-            'FSM_EXEC_CLOCK', Int(4, fsm_io.width, 16), fsm_io.width)
-        FSM_SEND_DATA = m.Localparam(
-            'FSM_SEND_DATA', Int(5, fsm_io.width, 16), fsm_io.width)
-
-        counter = m.Reg('counter', 8)
+            'FSM_EXEC_CLOCK', Int(3, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_REG_TAM = m.Localparam(
+            'FSM_SEND_REG_TAM', Int(4, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_REG_DATA = m.Localparam(
+            'FSM_SEND_REG_DATA', Int(5, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_REG_BYTES = m.Localparam(
+            'FSM_SEND_REG_BYTES', Int(6, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_MEM_TAM = m.Localparam(
+            'FSM_SEND_MEM_TAM', Int(7, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_MEM_DATA = m.Localparam(
+            'FSM_SEND_MEM_DATA', Int(8, fsm_io.width, 16), fsm_io.width)
+        FSM_SEND_MEM_BYTES = m.Localparam(
+            'FSM_SEND_MEM_BYTES', Int(9, fsm_io.width, 16), fsm_io.width)
 
         m.Always(Posedge(clk))(
             If(rst)(
                 fsm_io(FSM_IDLE),
                 rx_fifo_re(Int(0, 1, 2)),
-                sw_rst(Int(1, 1, 2)),
-                sw_clk(Int(0, 1, 2)),
+                risc_clk(Int(0, 1, 2)),
+                risc_rst(Int(0, 1, 2)),
                 tx_send_trig(Int(0, 1, 2)),
-                counter(Int(0, counter.width, 10))
+                monitor_read_on(Int(0, 1, 2)),
             ).Else(
                 rx_fifo_re(Int(0, 1, 2)),
-                sw_rst(Int(1, 1, 2)),
-                sw_clk(Int(0, 1, 2)),
+                risc_clk(Int(0, 1, 2)),
+                risc_rst(Int(0, 1, 2)),
                 tx_send_trig(Int(0, 1, 2)),
                 Case(fsm_io)(
                     When(FSM_IDLE)(
@@ -530,9 +535,6 @@ endmodule
                                 When(PROT_PC_B_RESET)(
                                     fsm_io(FSM_RESET)
                                 ),
-                                When(PROT_PC_B_SEND_CONFIG)(
-                                    fsm_io(FSM_IDLE)
-                                ),
                                 When(PROT_PC_B_CLOCK)(
                                     fsm_io(FSM_EXEC_CLOCK)
                                 ),
@@ -543,19 +545,64 @@ endmodule
                         )
                     ),
                     When(FSM_RESET)(
-                        sw_rst(Int(0, 1, 2)),
+                        risc_rst(Int(1, 1, 2)),
+                        risc_clk(Int(1, 1, 2)),
                         fsm_io(FSM_IDLE)
                     ),
                     When(FSM_EXEC_CLOCK)(
-                        sw_clk(Int(1, 1, 2)),
-                        fsm_io(FSM_SEND_DATA)
+                        risc_clk(Int(1, 1, 2)),
+                        fsm_io(FSM_SEND_REG_TAM)
                     ),
-                    When(FSM_SEND_DATA)(
+                    When(FSM_SEND_REG_TAM)(
                         If(~tx_bsy)(
-                            counter(counter + Int(1, counter.width, 10)),
-                            tx_send_trig(1),
-                            tx_send_data(counter),
+                            tx_send_trig(Int(1, 1, 2)),
+                            tx_send_data(Int(monitor_tam, 8, 10)),
+                            monitor_addr(Int(0, monitor_addr.width, 10)),
+                            fsm_io(FSM_SEND_REG_DATA)
+                        ),
+                    ),
+                    When(FSM_SEND_REG_DATA)(
+                        If(monitor_addr == monitor_tam)(
+                            monitor_read_on(Int(0, 1, 2)),
                             fsm_io(FSM_IDLE)
+                        ).Else(
+                            monitor_read_on(Int(1, 1, 2)),
+                            fsm_io(FSM_SEND_REG_BYTES)
+                        )
+                    ),
+                    When(FSM_SEND_REG_BYTES)(
+                        If(~tx_bsy)(
+                            monitor_addr(monitor_addr +
+                                         Int(1, monitor_addr.width, 10)),
+                            tx_send_trig(1),
+                            tx_send_data(reg_dataout),
+                            fsm_io(FSM_SEND_REG_DATA)
+                        ),
+                    ),
+                    When(FSM_SEND_MEM_TAM)(
+                        If(~tx_bsy)(
+                            tx_send_trig(Int(1, 1, 2)),
+                            tx_send_data(Int(monitor_tam, 8, 10)),
+                            monitor_addr(Int(0, monitor_addr.width, 10)),
+                            fsm_io(FSM_SEND_MEM_DATA)
+                        ),
+                    ),
+                    When(FSM_SEND_MEM_DATA)(
+                        If(monitor_addr == monitor_tam)(
+                            monitor_read_on(Int(0, 1, 2)),
+                            fsm_io(FSM_IDLE)
+                        ).Else(
+                            monitor_read_on(Int(1, 1, 2)),
+                            fsm_io(FSM_SEND_MEM_BYTES)
+                        )
+                    ),
+                    When(FSM_SEND_MEM_BYTES)(
+                        If(~tx_bsy)(
+                            monitor_addr(monitor_addr +
+                                         Int(1, monitor_addr.width, 10)),
+                            tx_send_trig(1),
+                            tx_send_data(mem_dataout),
+                            fsm_io(FSM_SEND_MEM_DATA)
                         ),
                     ),
                     When()(
@@ -564,14 +611,6 @@ endmodule
                 )
             )
         )
-        '''
-            If(~tx_bsy)(
-                tx_send_trig(1),
-                tx_send_data(PROT_B_PC_STARTED),
-                start(~start),
-                fsm_io(FSM_IDLE)
-            ),
-        '''
 
         m_aux = self.create_fifo()
         par = [
@@ -615,7 +654,20 @@ endmodule
         ]
         m.Instance(m_aux, m_aux.name, par, con)
 
-        _u.initialize_regs(m, {'tx': 1, 'sw_rst': 1})
+        aux = riscv.get_riscv()
+        par = []
+        con = [
+            ('clk', risc_clk),
+            ('rst', risc_rst),
+            ('monitor_read_on', monitor_read_on),
+            ('monitor_addr', monitor_addr),
+            ('mem_dataout', mem_dataout),
+            ('reg_dataout', reg_dataout),
+        ]
+
+        m.Instance(aux, aux.name, par, con)
+
+        _u.initialize_regs(m, {'tx': 1, 'risc_rst': 1})
         return m
 
 
