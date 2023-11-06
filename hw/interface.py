@@ -9,13 +9,14 @@ class Interface:
     def __init__(
             self,
             data_width: int = 32,
+            serial_width:int=8,
             ram_depth: int = 5,
-            inst_ram_depth: int = 6
+            inst_ram_depth: int = 6,
     ):
         self.data_width = data_width
         self.ram_depth = ram_depth
         self.inst_ram_depth = inst_ram_depth
-        self.serial_width = 8
+        self.serial_width = serial_width
         self.fifo_depth = 2
 
     def get(self):

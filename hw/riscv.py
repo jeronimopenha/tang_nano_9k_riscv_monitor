@@ -33,6 +33,7 @@ class Riscv:
         rst = m.Input("rst")
 
         monitor_read_on = m.Input('monitor_read_on')
+        monitor_write_on = m.Input('monitor_write_on')
         monitor_addr = m.Input('monitor_addr', 8)
         mem_dataout = m.Output('mem_dataout', 8)
         reg_dataout = m.Output('reg_dataout', 8)
@@ -171,10 +172,17 @@ class Riscv:
         ]
         m.Instance(m_pc, m.name, par, con)
 
-        inst_mem = m.Reg('inst_mem', data_width, data_width)
 
-        m.EmbeddedCode('')
-        inst.assign(inst_mem[pc[2:data_width]])
+        m_memory = self.create_memory()
+        con = [
+            ('clk', clk),
+            ('address', pc[2:data_width]),
+            #('writedata', data2),
+            ('memread', Int(1,1,2)),
+            ('memwrite', Int(0,1,2)),
+            ('readdata', inst),
+        ]
+        m.Instance(m_memory, m_memory.name, par, con)
 
         '''
         sub x0,x0,x0
@@ -200,59 +208,24 @@ class Riscv:
 
         '''
         40000033 40000033 00100093
-    00200113
-    00300193
-    00400213
-    00500293
-    00600313
-    00700393
-    00800413
-    00900493
-    00a00513
-    00b00593
-    405282b3
-    403181b3
-    40840433
-    00200113
-    00900493
-    009103b3
+        00200113
+        00300193
+        00400213
+        00500293
+        00600313
+        00700393
+        00800413
+        00900493
+        00a00513
+        00b00593
+        405282b3
+        403181b3
+        40840433
+        00200113
+        00900493
+        009103b3
 
         '''
-
-        m.Always(Posedge(rst))(
-            inst_mem[0](Int(0x40000033, data_width, 16)),
-            inst_mem[1](Int(0x40000033, data_width, 16)),
-            inst_mem[2](Int(0x00100093, data_width, 16)),
-            inst_mem[3](Int(0x00200113, data_width, 16)),
-            inst_mem[4](Int(0x00300193, data_width, 16)),
-            inst_mem[5](Int(0x00400213, data_width, 16)),
-            inst_mem[6](Int(0x00500293, data_width, 16)),
-            inst_mem[7](Int(0x00600313, data_width, 16)),
-            inst_mem[8](Int(0x00700393, data_width, 16)),
-            inst_mem[9](Int(0x00800413, data_width, 16)),
-            inst_mem[10](Int(0x00900493, data_width, 16)),
-            inst_mem[11](Int(0x00a00513, data_width, 16)),
-            inst_mem[12](Int(0x00b00593, data_width, 16)),
-            inst_mem[13](Int(0x405282b3, data_width, 16)),
-            inst_mem[14](Int(0x403181b3, data_width, 16)),
-            inst_mem[15](Int(0x40840433, data_width, 16)),
-            inst_mem[16](Int(0x00200293, data_width, 16)),
-            inst_mem[17](Int(0x00900413, data_width, 16)),
-            inst_mem[18](Int(0x009103b3, data_width, 16)),
-            inst_mem[19](Int(0, data_width, 16)),
-            inst_mem[20](Int(0, data_width, 16)),
-            inst_mem[21](Int(0, data_width, 16)),
-            inst_mem[22](Int(0, data_width, 16)),
-            inst_mem[23](Int(0, data_width, 16)),
-            inst_mem[24](Int(0, data_width, 16)),
-            inst_mem[25](Int(0, data_width, 16)),
-            inst_mem[26](Int(0, data_width, 16)),
-            inst_mem[27](Int(0, data_width, 16)),
-            inst_mem[28](Int(0, data_width, 16)),
-            inst_mem[29](Int(0, data_width, 16)),
-            inst_mem[30](Int(0, data_width, 16)),
-            inst_mem[31](Int(0, data_width, 16)),
-        )
 
         # _u.initialize_regs(m)
 
@@ -844,7 +817,7 @@ class Riscv:
         clk = m.Reg('clk')
         rst = m.Reg('rst')
 
-        m_aux = self.get_riscv()
+        m_riscv = self.get_riscv()
         par = []
         con = [
             ('clk', clk),
@@ -852,7 +825,7 @@ class Riscv:
             ('monitor_read_on', 0),
             ('monitor_addr', 0)
         ]
-        m.Instance(m_aux, m_aux.name, par, con)
+        m.Instance(m_riscv, m_riscv.name, par, con)
 
         _u.initialize_regs(m, {'rst': 0})
 
@@ -874,5 +847,3 @@ class Riscv:
 
         return m
 
-# riscv = Riscv()
-# riscv.testbench()
