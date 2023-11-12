@@ -1,7 +1,7 @@
 {
  "Files" : [
   {
-   "Path" : "/home/jeronimo/Documents/tang_projects/fpga_project/src/top_rxtx.v",
+   "Path" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
    "Type" : "verilog"
   }
  ],
@@ -9,7 +9,7 @@
 
  ],
  "LoopLimit" : 2000,
- "ResultFile" : "/home/jeronimo/Documents/tang_projects/fpga_project/impl/temp/rtl_parser.result",
+ "ResultFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/impl/temp/rtl_parser.result",
  "Top" : "",
  "VerilogStd" : "verilog_2001",
  "VhdlStd" : "vhdl_93"

@@ -402,27 +402,6 @@ class Components:
 
         _u.initialize_regs(m)
         return m
-        '''
-
-    always@(posedge clk) begin
-        if (rst) begin
-            data_out[7:0] <= 8'd0;
-        end else if (rx_bsy) begin
-            case(rx_cnt)
-                BIT0AT: data_out[0] <= rx;
-                BIT1AT: data_out[1] <= rx;
-                BIT2AT: data_out[2] <= rx;
-                BIT3AT: data_out[3] <= rx;
-                BIT4AT: data_out[4] <= rx;
-                BIT5AT: data_out[5] <= rx;
-                BIT6AT: data_out[6] <= rx;
-                BIT7AT: data_out[7] <= rx;
-            endcase
-        end
-    end
-
-endmodule
-        '''
 
     def create_io_riscv_controller(self) -> Module:
         data_width = self.data_width

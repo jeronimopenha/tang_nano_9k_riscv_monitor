@@ -1,8 +1,8 @@
--d /home/jeronimo/Documents/tang_projects/fpga_project/impl/gwsynthesis/fpga_project.vg
+-d /home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/impl/gwsynthesis/fpga_project.vg
 -p GW1NR-9C-QFN88P-6
 -pn GW1NR-LV9QN88PC6/I5
--cst /home/jeronimo/Documents/tang_projects/fpga_project/src/fpga_project.cst
--cfg /home/jeronimo/Documents/tang_projects/fpga_project/impl/pnr/device.cfg
+-cst /home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/fpga_project.cst
+-cfg /home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/impl/pnr/device.cfg
 -bit
 -tr
 -ph
