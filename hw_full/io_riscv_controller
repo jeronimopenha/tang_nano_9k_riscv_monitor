@@ -7,10 +7,15 @@ import util_full as _u
 class GeneralComponents:
     _instance = None
 
+    def __new__(class_, *args, **kwargs):
+        if not isinstance(class_._instance, class_):
+            class_._instance = object.__new__(class_, *args, **kwargs)
+        return class_._instance
+
     def __init__(self,
                  serial_width: int = 8):
         self.serial_width = serial_width
-        self.components = GeneralComponents()
+        self.components = GeneralComponents(serial_width=serial_width)
         self.cache = {}
 
     def get_io_riscv_controller(self, data_width: int = 32, fifo_depth: int = 2) -> Module:

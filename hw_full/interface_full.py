@@ -23,13 +23,7 @@ class Interface:
         self.fifo_depth = fifo_depth
         self.sys_clock = sys_clock
         self.baudrate = baudrate
-        self.components = GeneralComponents(data_width=data_width,
-                                            serial_width=serial_width,
-                                            ram_depth=ram_depth,
-                                            inst_ram_depth=inst_ram_depth,
-                                            fifo_depth=fifo_depth,
-                                            sys_clock=sys_clock,
-                                            baudrate=baudrate)
+        self.components = GeneralComponents(serial_width=serial_width)
 
     def get_interface(self):
         return self.__create_interface()

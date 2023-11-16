@@ -1,27 +1,21 @@
 from veriloggen import *
 from interface_full import Interface
+from general_components_full import GeneralComponents
 from math import ceil, log2
 import util_full as _u
 
 
 def testbench(serial_width: int = 8,
-              data_width: int = 32,
               ram_depth: int = 5,
               inst_ram_depth: int = 5,
               fifo_depth: int = 2,
               sys_clock: float = 27.0,
               baudrate: float = 3.0
               ):
+    data_width = 32
 
-    interface = Interface(data_width=data_width,
-                          serial_width=serial_width,
-                          ram_depth=ram_depth,
-                          inst_ram_depth=inst_ram_depth,
-                          fifo_depth=fifo_depth,
-                          sys_clock=sys_clock,
-                          baudrate=baudrate)
-    components = interface.components
-    par = []
+    components = GeneralComponents()
+    interface = Interface(serial_width=serial_width)
 
     m = Module("tang_nano_9k_riscv_monitor_testbench")
     clk = m.Reg('clk')
@@ -48,8 +42,8 @@ def testbench(serial_width: int = 8,
 
     m.EmbeddedCode('')
     m.EmbeddedCode('//Transfer configuration controller')
-
-    
+    mem_address = m.Reg('mem_address', ram_depth+1)
+    mem_readdata = m.Wire('mem_readdata', data_width)
 
     m.EmbeddedCode('//Transfer configuration controller -----')
 
@@ -78,7 +72,8 @@ def testbench(serial_width: int = 8,
     m.EmbeddedCode('// Receive data display controller -----')
 
     m.EmbeddedCode('// Uart rx module instantiation')
-    m_aux = components.get_uart_rx()
+    m_aux = components.get_uart_rx(baudrate=baudrate, sys_clock=sys_clock)
+    par = []
     con = [
         ('clk', clk),
         ('rst', rst),
@@ -92,7 +87,8 @@ def testbench(serial_width: int = 8,
     m.EmbeddedCode('// Uart rx module instantiation -----')
 
     m.EmbeddedCode('// Uart tx module instantiation')
-    m_aux = components.get_uart_tx()
+    m_aux = components.get_uart_tx(baudrate=baudrate, sys_clock=sys_clock)
+    par = []
     con = [
         ('clk', clk),
         ('rst', rst),
@@ -106,12 +102,27 @@ def testbench(serial_width: int = 8,
 
     m.EmbeddedCode('//Config mem instantiation')
 
-    m_aux = .components
-
+    m_aux = components.get_memory()  # 9b
+    par = [
+        ('READ_F', 1),
+        ('INIT_FILE', "config.rom"),
+        ('RAM_DEPTH', ram_depth),
+        ('DATA_WIDTH', data_width),
+    ]
+    con = [
+        ('clk', clk),
+        ('address', mem_address),
+        ('writedata', Int(0, data_width, 10)),
+        ('memread', Int(1, 1, 10)),
+        ('memwrite', Int(0, 1, 10)),
+        ('readdata', mem_readdata),
+    ]
+    m.Instance(m_aux, m_aux.name, par, con)
     m.EmbeddedCode('//Config mem instantiation -----')
 
     # interface
     m_aux = interface.get_interface()
+    par = []
     con = [
         ('clk', clk),
         ('btn_rst', rst),

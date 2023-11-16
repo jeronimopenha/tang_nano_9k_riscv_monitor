@@ -3,17 +3,22 @@ from math import ceil, log2
 import util_full as _u
 
 
-class GeneralComponents:
+class GeneralComponents(object):
     _instance = None
+
+    def __new__(class_, *args, **kwargs):
+        if not isinstance(class_._instance, class_):
+            class_._instance = object.__new__(class_, *args, **kwargs)
+        return class_._instance
 
     def __init__(self,
                  serial_width: int = 8):
         self.serial_width = serial_width
         self.cache = {}
 
-    def get_fifo(self, data_width: int = 8, fifo_depth: int = 2) -> Module:
-        data_width = data_width
-        fifo_depth = fifo_depth
+    def get_fifo(self, ) -> Module:
+        data_width = 8
+        fifo_depth = 2
 
         name = 'fifo'
         if name in self.cache.keys():
@@ -391,10 +396,11 @@ class GeneralComponents:
         _u.initialize_regs(m)
         return m
 
-    def get_io_riscv_controller(self, data_width: int = 32, fifo_depth: int = 2) -> Module:
+    def get_io_riscv_controller(self, fifo_depth: int = 2, ram_depth: int = 5, inst_ram_depth: int = 5) -> Module:
+        data_width = 32
         data_width = data_width
         fifo_depth = fifo_depth
-        riscv = self.riscv
+        #riscv = self.riscv
         monitor_tam = 32
 
         name = "io_riscv_controller"
@@ -621,7 +627,7 @@ class GeneralComponents:
         ]
         m.Instance(m_aux, m_aux.name, par, con)
 
-        aux = riscv.get_riscv()
+        #aux = riscv.get_riscv()
         par = []
         con = [
             ('clk', risc_clk),
@@ -632,14 +638,15 @@ class GeneralComponents:
             ('reg_dataout', reg_dataout),
         ]
 
-        m.Instance(aux, aux.name, par, con)
+        #m.Instance(aux, aux.name, par, con)
 
         _u.initialize_regs(m, {'tx': 1, 'risc_rst': 1})
         return m
 
-    def get_riscv(self, data_width: int = 32, ram_depth: int = 5, inst_ram_depth: int = 5) -> Module:
-
-        name = "riscv_rd_%d_ird_%d" % (self.ram_depth, self.inst_ram_depth,)
+    def get_riscv(self, ram_depth: int = 5, inst_ram_depth: int = 5) -> Module:
+        data_width = 32
+        name = "riscv_ram_%db_inst_ram_%db" % (
+            self.ram_depth, self.inst_ram_depth,)
         if name in self.cache.keys():
             return self.cache[name]
         m = Module(name)
@@ -649,9 +656,9 @@ class GeneralComponents:
 
         monitor_read_on = m.Input('monitor_read_on')
         monitor_write_on = m.Input('monitor_write_on')
-        monitor_addr = m.Input('monitor_addr', 8)
-        mem_dataout = m.Output('mem_dataout', 8)
-        reg_dataout = m.Output('reg_dataout', 8)
+        monitor_addr = m.Input('monitor_addr', max(ram_depth, inst_ram_depth))
+        mem_dataout = m.Output('mem_dataout', data_width)
+        reg_dataout = m.Output('reg_dataout', data_width)
 
         writedata = m.Wire('writedata', data_width)
         inst = m.Wire('inst', data_width)
@@ -684,7 +691,7 @@ class GeneralComponents:
         m.EmbeddedCode('//*')
         m.EmbeddedCode('//*****')
 
-        m_fetch = self.get_fetch(data_width=data_width)
+        m_fetch = self.get_fetch()
         par = []
         con = [
             ('clk', clk),
@@ -696,7 +703,7 @@ class GeneralComponents:
         ]
         m.Instance(m_fetch, m_fetch.name, par, con)
 
-        m_decode = self.get_decode(data_width=data_width)
+        m_decode = self.get_decode()
         con = [
             ('clk', clk),
             ('inst', inst),
@@ -1295,36 +1302,47 @@ class GeneralComponents:
         ]
         m.Instance(m_shiftra, m_shiftra.name, par, con)
 
+        AND = m.Localparam('AND', Int(0, alucontrol.width, 10))
+        OR = m.Localparam('OR', Int(1, alucontrol.width, 10))
+        ADD = m.Localparam('ADD', Int(2, alucontrol.width, 10))
+        SLL = m.Localparam('SLL', Int(3, alucontrol.width, 10))
+        XOR = m.Localparam('XOR', Int(4, alucontrol.width, 10))
+        SH = m.Localparam('SH', Int(5, alucontrol.width, 10))
+        SUB = m.Localparam('SUB', Int(6, alucontrol.width, 10))
+        SLT = m.Localparam('SLT', Int(7, alucontrol.width, 10))
+        SRL = m.Localparam('SRL', Int(8, alucontrol.width, 10))
+        SLTU = m.Localparam('SRL', Int(9, alucontrol.width, 10))
+
         m.Always()(
             Case(alucontrol)(
-                When(Int(0, alucontrol.width, 10))(
+                When(AND)(
                     aluout(a & b)
                 ),
-                When(Int(1, alucontrol.width, 10))(
+                When(OR)(
                     aluout(a | b)
                 ),
-                When(Int(2, alucontrol.width, 10))(
+                When(ADD)(
                     aluout(a+b)
                 ),
-                When(Int(3, alucontrol.width, 10))(
+                When(SLL)(
                     aluout(a << b[0:5])
                 ),
-                When(Int(4, alucontrol.width, 10))(
+                When(XOR)(
                     aluout(a ^ b)
                 ),
-                When(Int(5, alucontrol.width, 10))(
+                When(SH)(
                     aluout(sh)
                 ),
-                When(Int(6, alucontrol.width, 10))(
+                When(SUB)(
                     aluout(a-b)
                 ),
-                When(Int(7, alucontrol.width, 10))(
+                When(SLT)(
                     aluout(t)
                 ),
-                When(Int(8, alucontrol.width, 10))(
+                When(SRL)(
                     aluout(a >> b[0:5])
                 ),
-                When(Int(9, alucontrol.width, 10))(
+                When(SLTU)(
                     aluout(a < b)
                 ),
                 When()(
@@ -1391,37 +1409,54 @@ class GeneralComponents:
         return m
 
     def get_memory(self) -> Module:
-        data_width = self.data_width
-
-        name = "memory"
+        name = 'memory'
         if name in self.cache.keys():
             return self.cache[name]
+
         m = Module(name)
+        READ_F = m.Parameter('READ_F', 0)
+        INIT_FILE = m.Parameter('INIT_FILE', 'mem_file.txt')
+        WRITE_F = m.Parameter('WRITE_F', 0)
+        OUTPUT_FILE = m.Parameter('OUTPUT_FILE', 'mem_out_file.txt')
+        RAM_DEPTH = m.Parameter('RAM_DEPTH', 5)
+        DATA_WIDTH = m.Parameter('DATA_WIDTH', 32)
 
         clk = m.Input('clk')
-        address = m.Input('address', data_width)
-        writedata = m.Input('writedata', data_width)
+        address = m.Input('address', RAM_DEPTH)
+        writedata = m.Input('writedata', DATA_WIDTH)
         memread = m.Input('memread')
         memwrite = m.Input('memwrite')
-        readdata = m.Output('readdata', data_width)
+        readdata = m.Output('readdata', DATA_WIDTH)
 
-        memory = m.Reg('memory', data_width, 2**self.ram_depth)
+        # m.EmbeddedCode(
+        #    '(*rom_style = "block" *) reg [%d-1:0] mem[0:2**%d-1];' % (width, depth))
+        # m.EmbeddedCode('/*')
+        memory = m.Reg('memory', DATA_WIDTH, Power(2, RAM_DEPTH))
+        # m.EmbeddedCode('*/')
 
-        m.EmbeddedCode('')
-
-        readdata.assign(
-            Mux(memread, memory[address[2:data_width]], Int(0, data_width, 10)))
+        readdata.assign(Mux(memread, memory[address], 0))
 
         m.Always(Posedge(clk))(
             If(memwrite)(
-                memory[address[2:data_width]](writedata)
+                memory[address](writedata)
+            ),
+        )
+
+        m.EmbeddedCode('//synthesis translate_off')
+        m.Always(Posedge(clk))(
+            If(AndList(memwrite, WRITE_F))(
+                Systask('writememh', OUTPUT_FILE, memory)
+            ),
+        )
+        m.EmbeddedCode('//synthesis translate_on')
+
+        m.Initial(
+            If(READ_F)(
+                Systask('readmemh', INIT_FILE, memory),
             )
         )
 
         self.cache[name] = m
-
-        # _u.initialize_regs(m)
-
         return m
 
     def get_writeback(self) -> Module:
@@ -1445,5 +1480,5 @@ class GeneralComponents:
 
         return m
 
-# comp = GeneralComponents()
-# comp.get_alucontrol().to_verilog('alucontrol.v')
+# cmp = GeneralComponents()
+# print(cmp.get_memory().to_verilog())
