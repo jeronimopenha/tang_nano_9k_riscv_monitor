@@ -1,0 +1,8 @@
+Exemplo serial receber n valores e executar duas funções e retornar
+
+Reunir com o Caio sobre Radix 4 da rede lá e tenho de entender como ela funfa
+
+Estruturar artigos pipeline e kmeans
+
+Mexer no kmeans com GPU
+

@@ -48,8 +48,8 @@ u = UartInterface()
 u.start_listener()
 
 op = 0
-while True:
-    print("Digite o valor a ser verificado (0 a 255): ")
+while op < 256:
+    print("Digite o valor a ser verificado (0 a 255) (256 pra sair): ")
     op = int(input())
     if op > 255 or op < 0:
         break

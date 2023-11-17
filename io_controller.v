@@ -1,58 +1,5 @@
 
 
-module tang_nano_9k_riscv_monitor
-(
-  input clk_27mhz,
-  input button_s1,
-  input uart_rx,
-  output [6-1:0] led,
-  output uart_tx
-);
-
-  // Reset signal control
-  wire rst;
-  wire running;
-  assign rst = ~button_s1;
-  assign running = ~rst;
-
-  // rx signals and controls
-  wire rx_bsy;
-
-  // tx signals and controls
-  wire tx_bsy;
-
-  // LED assigns. In this board the leds are activated by 0 signal
-  // led[0] = rx
-  // led[1] = rx_bsy
-  // led[2] = tx
-  // led[3] = tx_bsy
-  // led[4] = rst
-  // led[5] = desligado
-  assign led[0] = uart_rx;
-  assign led[1] = ~rx_bsy;
-  assign led[2] = uart_tx;
-  assign led[3] = ~tx_bsy;
-  assign led[4] = ~rst;
-  assign led[5] = ~running;
-
-  // I/O data protocol controller
-
-  io_riscv_controller
-  io_riscv_controller
-  (
-    .clk(clk_27mhz),
-    .rst(~button_s1),
-    .rx(uart_rx),
-    .rx_bsy(rx_bsy),
-    .tx(uart_tx),
-    .tx_bsy(tx_bsy)
-  );
-
-
-endmodule
-
-
-
 module io_riscv_controller
 (
   input clk,
