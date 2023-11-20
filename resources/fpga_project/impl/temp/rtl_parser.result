@@ -2,166 +2,26 @@
  {
   "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
   "InstLine" : 3,
-  "InstName" : "tang_nano_9k_riscv_monitor",
+  "InstName" : "serial_results",
   "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
   "ModuleLine" : 3,
-  "ModuleName" : "tang_nano_9k_riscv_monitor",
+  "ModuleName" : "serial_results",
   "SubInsts" : [
    {
     "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-    "InstLine" : 41,
-    "InstName" : "io_riscv_controller",
+    "InstLine" : 112,
+    "InstName" : "m_uart_rx",
     "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-    "ModuleLine" : 56,
-    "ModuleName" : "io_riscv_controller",
-    "SubInsts" : [
-     {
-      "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "InstLine" : 219,
-      "InstName" : "rx_fifo",
-      "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "ModuleLine" : 285,
-      "ModuleName" : "fifo"
-     },
-     {
-      "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "InstLine" : 233,
-      "InstName" : "uart_rx",
-      "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "ModuleLine" : 383,
-      "ModuleName" : "uart_rx"
-     },
-     {
-      "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "InstLine" : 246,
-      "InstName" : "uart_tx",
-      "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "ModuleLine" : 568,
-      "ModuleName" : "uart_tx"
-     },
-     {
-      "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "InstLine" : 258,
-      "InstName" : "riscv_rd_5_ird_6",
-      "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-      "ModuleLine" : 696,
-      "ModuleName" : "riscv_rd_5_ird_6",
-      "SubInsts" : [
-       {
-        "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "InstLine" : 736,
-        "InstName" : "fetch",
-        "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "ModuleLine" : 808,
-        "ModuleName" : "fetch",
-        "SubInsts" : [
-         {
-          "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "InstLine" : 826,
-          "InstName" : "fetch",
-          "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "ModuleLine" : 850,
-          "ModuleName" : "pc"
-         },
-         {
-          "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "InstLine" : 836,
-          "InstName" : "memory",
-          "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "ModuleLine" : 876,
-          "ModuleName" : "memory"
-         }
-        ]
-       },
-       {
-        "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "InstLine" : 748,
-        "InstName" : "decode",
-        "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "ModuleLine" : 901,
-        "ModuleName" : "decode",
-        "SubInsts" : [
-         {
-          "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "InstLine" : 941,
-          "InstName" : "control_unit",
-          "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "ModuleLine" : 974,
-          "ModuleName" : "control_unit"
-         },
-         {
-          "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "InstLine" : 957,
-          "InstName" : "register_bank",
-          "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "ModuleLine" : 1049,
-          "ModuleName" : "register_bank"
-         }
-        ]
-       },
-       {
-        "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "InstLine" : 769,
-        "InstName" : "execute",
-        "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "ModuleLine" : 1085,
-        "ModuleName" : "execute",
-        "SubInsts" : [
-         {
-          "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "InstLine" : 1112,
-          "InstName" : "alucontrol",
-          "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "ModuleLine" : 1135,
-          "ModuleName" : "alucontrol"
-         },
-         {
-          "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "InstLine" : 1121,
-          "InstName" : "alu",
-          "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-          "ModuleLine" : 1233,
-          "ModuleName" : "alu",
-          "SubInsts" : [
-           {
-            "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-            "InstLine" : 1249,
-            "InstName" : "slt",
-            "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-            "ModuleLine" : 1314,
-            "ModuleName" : "slt"
-           },
-           {
-            "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-            "InstLine" : 1258,
-            "InstName" : "shiftra",
-            "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-            "ModuleLine" : 1329,
-            "ModuleName" : "shiftra"
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "InstLine" : 783,
-        "InstName" : "memory",
-        "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "ModuleLine" : 876,
-        "ModuleName" : "memory"
-       },
-       {
-        "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "InstLine" : 795,
-        "InstName" : "writeback",
-        "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-        "ModuleLine" : 1349,
-        "ModuleName" : "writeback"
-       }
-      ]
-     }
-    ]
+    "ModuleLine" : 150,
+    "ModuleName" : "m_uart_rx"
+   },
+   {
+    "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
+    "InstLine" : 123,
+    "InstName" : "m_uart_tx",
+    "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
+    "ModuleLine" : 324,
+    "ModuleName" : "m_uart_tx"
    }
   ]
  }

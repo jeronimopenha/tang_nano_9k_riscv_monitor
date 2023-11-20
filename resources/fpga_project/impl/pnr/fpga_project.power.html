@@ -83,7 +83,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Fri Nov 17 17:18:04 2023
+<td>Sun Nov 19 23:35:46 2023
 </td>
 </tr>
 <tr>
@@ -96,7 +96,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <table class="summary_table">
 <tr>
 <td class="label">Total Power (mW)</td>
-<td>9.019</td>
+<td>8.891</td>
 </tr>
 <tr>
 <td class="label">Quiescent Power (mW)</td>
@@ -104,7 +104,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Dynamic Power (mW)</td>
-<td>0.432</td>
+<td>0.304</td>
 </tr>
 <tr>
 <td class="label">Psram Power (mW)</td>
@@ -115,7 +115,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <table class="summary_table">
 <tr>
 <td class="label">Junction Temperature</td>
-<td>25.198</td>
+<td>25.196</td>
 </tr>
 <tr>
 <td class="label">Theta JA</td>
@@ -123,7 +123,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Max Allowed Ambient Temperature</td>
-<td>84.802</td>
+<td>84.804</td>
 </tr>
 </table>
 <h2><a name="Configure_Info">Configure Information:</a></h2>
@@ -192,16 +192,16 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <tr>
 <td>VCC</td>
 <td>1.200</td>
-<td>0.128</td>
+<td>0.091</td>
 <td>1.988</td>
-<td>2.539</td>
+<td>2.494</td>
 </tr>
 <tr>
 <td>VCCX</td>
 <td>2.500</td>
-<td>0.070</td>
+<td>0.050</td>
 <td>2.424</td>
-<td>6.235</td>
+<td>6.186</td>
 </tr>
 <tr>
 <td>VCCO12</td>
@@ -213,9 +213,9 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <tr>
 <td>VCCO18</td>
 <td>1.800</td>
-<td>0.034</td>
+<td>0.015</td>
 <td>0.077</td>
-<td>0.201</td>
+<td>0.166</td>
 </tr>
 </table>
 <h1><a name="Detail">Power Details</a></h1>
@@ -229,15 +229,15 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td>Logic</td>
-<td>0.068</td>
+<td>0.047</td>
 <td>NA</td>
-<td>6.216</td>
+<td>6.250</td>
 </tr>
 <tr>
 <td>IO</td>
-<td>0.800
+<td>0.693
 <td>0.438
-<td>8.750
+<td>6.875
 </tr>
 </table>
 <h2><a name="By_Hierarchy">Power By Hierarchy:</a></h2>
@@ -248,49 +248,17 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <th class="label">Block Dynamic Power(mW)</th>
 </tr>
 <tr>
-<td>tang_nano_9k_riscv_monitor</td>
-<td>0.068</td>
-<td>0.068(0.068)</td>
+<td>serial_results</td>
+<td>0.047</td>
+<td>0.047(0.025)</td>
 <tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/</td>
-<td>0.068</td>
-<td>0.068(0.059)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/riscv_rd_5_ird_6/</td>
-<td>0.014</td>
-<td>0.014(0.014)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/riscv_rd_5_ird_6/decode/</td>
-<td>0.004</td>
-<td>0.004(0.003)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/riscv_rd_5_ird_6/decode/register_bank/</td>
-<td>0.003</td>
-<td>0.003(0.000)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/riscv_rd_5_ird_6/execute/</td>
-<td>0.008</td>
-<td>0.008(0.008)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/riscv_rd_5_ird_6/execute/alu/</td>
-<td>0.008</td>
-<td>0.008(0.000)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/riscv_rd_5_ird_6/memory/</td>
-<td>0.002</td>
-<td>0.002(0.000)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/rx_fifo/</td>
-<td>0.020</td>
-<td>0.020(0.000)</td>
-<tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/uart_rx/</td>
+<td>serial_results/m_uart_rx/</td>
 <td>0.013</td>
 <td>0.013(0.000)</td>
 <tr>
-<td>tang_nano_9k_riscv_monitor/io_riscv_controller/uart_tx/</td>
-<td>0.011</td>
-<td>0.011(0.000)</td>
+<td>serial_results/m_uart_tx/</td>
+<td>0.012</td>
+<td>0.012(0.000)</td>
 </table>
 <h2><a name="By_Clock_Domain">Power By Clock Domain:</a></h2>
 <table class="detail_table">
@@ -302,17 +270,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <tr>
 <td>clk_27mhz</td>
 <td>50.000</td>
-<td>0.069</td>
-</tr>
-<tr>
-<td>NO CLOCK DOMAIN</td>
-<td>0.000</td>
-<td>0.000</td>
-</tr>
-<tr>
-<td>io_riscv_controller/risc_clk</td>
-<td>50.000</td>
-<td>0.001</td>
+<td>0.048</td>
 </tr>
 </table>
 </div><!-- content -->
