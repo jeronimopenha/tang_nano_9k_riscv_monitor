@@ -2,26 +2,18 @@
  {
   "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
   "InstLine" : 3,
-  "InstName" : "serial_results",
+  "InstName" : "spi_lcd_image",
   "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
   "ModuleLine" : 3,
-  "ModuleName" : "serial_results",
+  "ModuleName" : "spi_lcd_image",
   "SubInsts" : [
    {
     "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-    "InstLine" : 112,
-    "InstName" : "m_uart_rx",
+    "InstLine" : 151,
+    "InstName" : "config_rom",
     "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-    "ModuleLine" : 150,
-    "ModuleName" : "m_uart_rx"
-   },
-   {
-    "InstFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-    "InstLine" : 123,
-    "InstName" : "m_uart_tx",
-    "ModuleFile" : "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/resources/fpga_project/src/top_rxtx.v",
-    "ModuleLine" : 324,
-    "ModuleName" : "m_uart_tx"
+    "ModuleLine" : 162,
+    "ModuleName" : "config_rom"
    }
   ]
  }

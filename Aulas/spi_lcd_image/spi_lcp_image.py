@@ -6,11 +6,17 @@ def create_spi_lcd_image() -> Module:
     m = Module("spi_lcd_image")
     clk = m.Input('clk_27mhz')
     btn_rst = m.Input('button_s1')
+    resetn = m.Input('resetn')
+
     lcd_resetn = m.Output('lcd_resetn')
     lcd_clk = m.Output('lcd_clk')
     lcd_cs = m.Output('lcd_cs')
     lcd_rs = m.Output('lcd_rs')
     lcd_data = m.Output('lcd_data')
+
+    uart_rx = m.Input('uart_rx')
+    led = m.OutputReg('led', 6)
+    uart_tx = m.Output('uart_tx')
 
     MAX_CMDS = m.Localparam('MAX_CMDS', 70)
     m.EmbeddedCode('')
@@ -27,6 +33,14 @@ def create_spi_lcd_image() -> Module:
     spi_data = m.Reg('spi_data', 8)
 
     m.EmbeddedCode('')
+    INIT_RESET = m.Localparam('INIT_RESET', Int(0, 4, 2))
+    INIT_PREPARE = m.Localparam('INIT_PREPARE', Int(1, 4, 2))
+    INIT_WAKEUP = m.Localparam('INIT_WAKEUP', Int(2, 4, 2))
+    INIT_SNOOZE = m.Localparam('INIT_SNOOZE', Int(3, 4, 2))
+    INIT_WORKING = m.Localparam('INIT_WORKING', Int(4, 4, 2))
+    INIT_DONE = m.Localparam('INIT_DONE', Int(5, 4, 2))
+
+    m.EmbeddedCode('')
     CNT_100MS = m.Localparam('CNT_100MS', Int(2700000, clk_cnt.width, 10))
     CNT_120MS = m.Localparam('CNT_120MS', Int(3240000, clk_cnt.width, 10))
     CNT_200MS = m.Localparam('CNT_200MS', Int(5400000, clk_cnt.width, 10))
@@ -34,27 +48,123 @@ def create_spi_lcd_image() -> Module:
     m.EmbeddedCode('')
     lcd_resetn.assign(lcd_reset_r)
     lcd_clk.assign(~clk)
+    lcd_cs.assign(lcd_cs_r)
     lcd_rs.assign(lcd_rs_r)
     m.EmbeddedCode('// MSB')
     lcd_data.assign(spi_data[7])
+    m.EmbeddedCode('// gen color bar')
     pixel = m.Wire('pixel', 16)
+    pixel.assign(
+        Mux(pixel_cnt >= Int(21600, pixel_cnt.width, 10),
+            Int(0xF800, pixel.width, 16),
+            Mux(pixel_cnt >= Int(10800, pixel_cnt.width, 10),
+                Int(0x07E0, pixel.width, 16),
+                Int(0x001F, pixel.width, 16),
+                )
+            )
+    )
 
-    m_aux = create_memory()
-    par = [
-        ('READ_F', 1),
-        ('INIT_FILE', 'img.rom'),
-        ('RAM_DEPTH', 15),
-        ('DATA_WIDTH', 24),
-    ]
-    con = [
-        ('clk', clk),
-        ('address', pixel_cnt),
-        ('writedata', Int(0, 16, 2)),
-        ('memread', Int(1, 1, 2)),
-        ('memwrite', Int(0, 1, 2)),
-        ('readdata', pixel),
-    ]
-    m.Instance(m_aux, m_aux.name, par, con)
+    m.Always(Posedge(clk))(
+        If(~resetn)(
+            clk_cnt(Int(0, clk_cnt.width, 10)),
+            cmd_index(Int(0, cmd_index.width, 10)),
+            init_state(INIT_RESET),
+            lcd_cs_r(Int(1, 1, 10)),
+            lcd_rs_r(Int(1, 1, 10)),
+            lcd_reset_r(Int(0, 1, 10)),
+            spi_data(Int(0xFF, spi_data.width, 16)),
+            bit_loop(Int(0, bit_loop.width, 10)),
+            pixel_cnt(Int(0, pixel_cnt.width, 10)),
+        ).Else(
+            Case(init_state)(
+                When(INIT_RESET)(
+                    If(clk_cnt == CNT_100MS)(
+                        clk_cnt(Int(0, clk_cnt.width, 10)),
+                        init_state(INIT_PREPARE),
+                        lcd_reset_r(Int(1, 1, 10))
+                    ).Else(
+                        clk_cnt(clk_cnt + Int(1, clk_cnt.width, 10))
+                    )
+                ),
+                When(INIT_PREPARE)(
+                    If(clk_cnt == CNT_200MS)(
+                        clk_cnt(Int(0, clk_cnt.width, 10)),
+                        init_state(INIT_WAKEUP),
+                    ).Else(
+                        clk_cnt(clk_cnt + Int(1, clk_cnt.width, 10))
+                    )
+                ),
+                When(INIT_WAKEUP)(
+                    If(bit_loop == Int(0, bit_loop.width, 10))(
+                        # start
+                        lcd_cs_r(Int(0, 1, 10)),
+                        lcd_rs_r(Int(0, 1, 10)),
+                        spi_data(Int(0x11, spi_data.width, 16)),
+                        bit_loop(bit_loop+Int(1, bit_loop.width, 10)),
+                    ).Elif(bit_loop == Int(8, bit_loop.width, 10))(
+                        lcd_cs_r(Int(1, 1, 10)),
+                        lcd_rs_r(Int(1, 1, 10)),
+                        bit_loop(Int(0, bit_loop.width, 10)),
+                        init_state(INIT_SNOOZE),
+                    ).Else(
+                        spi_data(Cat(spi_data[0:7], Int(1, 1, 10))),
+                        bit_loop(bit_loop + Int(1, bit_loop.width, 10)),
+                    )
+                ),
+                When(INIT_SNOOZE)(
+                    If(clk_cnt == CNT_120MS)(
+                        clk_cnt(Int(0, clk_cnt.width, 10)),
+                        init_state(INIT_WORKING),
+                    ).Else(
+                        clk_cnt(clk_cnt + Int(1, clk_cnt.width, 10))
+                    )
+                ),
+                When(INIT_WORKING)(
+                    If(cmd_index == MAX_CMDS)(
+                        init_state(INIT_DONE)
+                    ).Else(
+                        If(bit_loop == Int(0, bit_loop.width, 10))(
+                            lcd_cs_r(Int(0, 1, 10)),
+                            lcd_rs_r(init_cmd[8]),
+                            spi_data(init_cmd[0:8]),
+                            bit_loop(bit_loop+Int(1, bit_loop.width, 10)),
+                        ).Elif(bit_loop == Int(8, bit_loop.width, 10))(
+                            lcd_cs_r(Int(1, 1, 10)),
+                            lcd_rs_r(Int(1, 1, 10)),
+                            bit_loop(Int(0, bit_loop.width, 10)),
+                            cmd_index(cmd_index+Int(1, cmd_index.width, 10)),
+                        ).Else(
+                            spi_data(Cat(spi_data[0:7], Int(1, 1, 10))),
+                            bit_loop(bit_loop + Int(1, bit_loop.width, 10)),
+                        )
+                    )
+                ),
+                When(INIT_DONE)(
+                    If(pixel_cnt == Int(32400, pixel_cnt.width, 10))(
+
+                    ).Else(
+                        If(bit_loop == Int(0, bit_loop.width, 10))(
+                            lcd_cs_r(Int(0, 1, 10)),
+                            lcd_rs_r(Int(1, 1, 10)),
+                            spi_data(pixel[8:16]),
+                            bit_loop(bit_loop + Int(1, bit_loop.width, 10)),
+                        ).Elif(bit_loop == Int(8, bit_loop.width, 10))(
+                            spi_data(pixel[0:8]),
+                            bit_loop(bit_loop + Int(1, bit_loop.width, 10)),
+                        ).Elif(bit_loop == Int(16, bit_loop.width, 10))(
+                            lcd_cs_r(Int(1, 1, 10)),
+                            lcd_rs_r(Int(1, 1, 10)),
+                            bit_loop(Int(0, bit_loop.width, 10)),
+                            pixel_cnt(pixel_cnt+Int(1, pixel_cnt.width, 10)),
+                        ).Else(
+                            spi_data(Cat(spi_data[0:7], Int(1, 1, 10))),
+                            bit_loop(bit_loop + Int(1, bit_loop.width, 10)),
+                        )
+                    )
+                ),
+            )
+        )
+    )
 
     m_aux = create_lcd_config_rom()
     par = []
@@ -157,53 +267,5 @@ def create_lcd_config_rom() -> Module:
     return m
 
 
-def create_memory() -> Module:
-    name = 'memory'
-    m = Module(name)
-    READ_F = m.Parameter('READ_F', 0)
-    INIT_FILE = m.Parameter('INIT_FILE', 'mem_file.txt')
-    WRITE_F = m.Parameter('WRITE_F', 0)
-    OUTPUT_FILE = m.Parameter('OUTPUT_FILE', 'mem_out_file.txt')
-    RAM_DEPTH = m.Parameter('RAM_DEPTH', 5)
-    DATA_WIDTH = m.Parameter('DATA_WIDTH', 32)
-
-    clk = m.Input('clk')
-    address = m.Input('address', RAM_DEPTH)
-    writedata = m.Input('writedata', DATA_WIDTH)
-    memread = m.Input('memread')
-    memwrite = m.Input('memwrite')
-    readdata = m.Output('readdata', DATA_WIDTH)
-
-    # m.EmbeddedCode(
-    #    '(*rom_style = "block" *) reg [%d-1:0] mem[0:2**%d-1];' % (width, depth))
-    # m.EmbeddedCode('/*')
-    memory = m.Reg('memory', DATA_WIDTH, Power(2, RAM_DEPTH))
-    # m.EmbeddedCode('*/')
-
-    readdata.assign(Mux(memread, memory[address], 0))
-
-    m.Always(Posedge(clk))(
-        If(memwrite)(
-            memory[address](writedata)
-        ),
-    )
-
-    m.EmbeddedCode('//synthesis translate_off')
-    m.Always(Posedge(clk))(
-        If(AndList(memwrite, WRITE_F))(
-            Systask('writememh', OUTPUT_FILE, memory)
-        ),
-    )
-    m.EmbeddedCode('//synthesis translate_on')
-
-    m.Initial(
-        If(READ_F)(
-            Systask('readmemh', INIT_FILE, memory),
-        )
-    )
-
-    self.cache[name] = m
-    return m
-
-
-print(create_spi_lcd_image().to_verilog())
+m = create_spi_lcd_image()
+m.to_verilog(m.name+'.v')

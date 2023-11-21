@@ -21,7 +21,7 @@ def create_contador_leds():
         If(rst)(
             counter(Int(0, counter.width, 10))
         ).Else(
-            If(counter < Int(13499999, counter.width, 16))(
+            If(counter < Int(13499999, counter.width, 10))(
                 counter(counter+Int(1, counter.width, 10))
             ).Else(
                 counter(0),
