@@ -2,8 +2,8 @@ from veriloggen import *
 from math import ceil, log2
 
 
-def create_spi_lcd_image() -> Module:
-    m = Module("spi_lcd_image")
+def create_display_spi_barras() -> Module:
+    m = Module("display_spi_barras")
     clk = m.Input('clk_27mhz')
     btn_rst = m.Input('button_s1')
     resetn = m.Input('resetn')
@@ -267,5 +267,5 @@ def create_lcd_config_rom() -> Module:
     return m
 
 
-m = create_spi_lcd_image()
+m = create_display_spi_barras()
 m.to_verilog(m.name+'.v')
