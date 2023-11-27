@@ -11,15 +11,18 @@ module display_spi_serial
   output lcd_rs,
   output lcd_data,
   input uart_rx,
-  output reg [6-1:0] led,
+  output [6-1:0] led,
   output uart_tx
 );
 
-  wire rst;
-  assign rst = ~button_s1;
 
+  wire rx_bsy;
   wire rx_data_valid;
   wire [8-1:0] rx_data_out;
+  reg send_trig;
+  reg send_data;
+  assign led[0] = ~rx_bsy;
+  assign led[1] = uart_rx;
 
   localparam MAX_CMDS = 70;
 
@@ -39,7 +42,9 @@ module display_spi_serial
   localparam INIT_WAKEUP = 4'b10;
   localparam INIT_SNOOZE = 4'b11;
   localparam INIT_WORKING = 4'b100;
-  localparam INIT_DONE = 4'b101;
+  localparam INIT_WAIT_SERIAL = 4'b101;
+  localparam INIT_WRITE = 4'b110;
+  localparam INIT_DONE = 4'b111;
 
   localparam CNT_100MS = 32'd2700000;
   localparam CNT_120MS = 32'd3240000;
@@ -57,19 +62,23 @@ module display_spi_serial
   reg lcd_fire;
 
   always @(posedge clk_27mhz) begin
-    if(rst) begin
+    if(~resetn) begin
       counter_bytes_in <= 1'd0;
       lcd_fire <= 1'b0;
+      send_trig <= 1'b0;
     end else begin
       lcd_fire <= 1'b0;
+      send_trig <= 1'b0;
       if(rx_data_valid) begin
-        if(counter_bytes_in == 1) begin
+        if(counter_bytes_in == 1'd1) begin
           counter_bytes_in <= 1'd0;
           lcd_fire <= 1'b1;
         end else begin
-          counter_bytes_in <= counter_bytes_in + 1'd0;
+          counter_bytes_in <= counter_bytes_in + 1'd1;
         end
         pixel <= { rx_data_out, pixel[15:8] };
+        send_trig <= 1'b0;
+        send_data <= rx_data_out;
       end 
     end
   end
@@ -131,7 +140,7 @@ module display_spi_serial
         end
         INIT_WORKING: begin
           if(cmd_index == MAX_CMDS) begin
-            init_state <= INIT_DONE;
+            init_state <= INIT_WAIT_SERIAL;
           end else if(bit_loop == 5'd0) begin
             lcd_cs_r <= 1'd0;
             lcd_rs_r <= init_cmd[8];
@@ -147,9 +156,17 @@ module display_spi_serial
             bit_loop <= bit_loop + 5'd1;
           end
         end
-        INIT_DONE: begin
-          if(pixel_cnt == 16'd32400) begin
-          end else if((bit_loop == 5'd0) && lcd_fire) begin
+        INIT_WAIT_SERIAL: begin
+          if((bit_loop == 5'd0) && lcd_fire) begin
+            lcd_cs_r <= 1'd0;
+            lcd_rs_r <= 1'd1;
+            spi_data <= pixel[15:8];
+            bit_loop <= bit_loop + 5'd1;
+            init_state <= INIT_WRITE;
+          end 
+        end
+        INIT_WRITE: begin
+          if((bit_loop == 5'd0) && lcd_fire) begin
             lcd_cs_r <= 1'd0;
             lcd_rs_r <= 1'd1;
             spi_data <= pixel[15:8];
@@ -162,10 +179,17 @@ module display_spi_serial
             lcd_rs_r <= 1'd1;
             bit_loop <= 5'd0;
             pixel_cnt <= pixel_cnt + 16'd1;
+            if(pixel_cnt == 16'd42399) begin
+              init_state <= INIT_DONE;
+            end else begin
+              init_state <= INIT_WAIT_SERIAL;
+            end
           end else begin
             spi_data <= { spi_data[6:0], 1'd1 };
             bit_loop <= bit_loop + 5'd1;
           end
+        end
+        INIT_DONE: begin
         end
       endcase
     end
@@ -185,11 +209,41 @@ module display_spi_serial
   m_uart_rx
   (
     .clk(clk_27mhz),
-    .rst(rst),
+    .rst(~resetn),
     .rx(uart_rx),
+    .rx_bsy(rx_bsy),
     .data_valid(rx_data_valid),
     .data_out(rx_data_out)
   );
+
+
+  m_uart_tx
+  m_uart_tx
+  (
+    .clk(clk_27mhz),
+    .rst(~resetn),
+    .send_trig(send_trig),
+    .send_data(send_data),
+    .tx(uart_tx)
+  );
+
+
+  initial begin
+    send_trig = 0;
+    send_data = 0;
+    init_state = 0;
+    cmd_index = 0;
+    clk_cnt = 0;
+    bit_loop = 0;
+    pixel_cnt = 0;
+    lcd_cs_r = 0;
+    lcd_rs_r = 0;
+    lcd_reset_r = 0;
+    spi_data = 0;
+    pixel = 0;
+    counter_bytes_in = 0;
+    lcd_fire = 0;
+  end
 
 
 endmodule
@@ -452,6 +506,134 @@ module m_uart_rx
         endcase
       end 
     end
+  end
+
+
+endmodule
+
+
+
+module m_uart_tx
+(
+  input clk,
+  input rst,
+  input send_trig,
+  input [8-1:0] send_data,
+  output reg tx,
+  output reg tx_bsy
+);
+
+  // 27MHz
+  // 3Mbps
+  localparam CLKPERFRM = 90;
+  // bit order is lsb-msb
+  localparam TBITAT = 1;
+  // START bit
+  localparam BIT0AT = 10;
+  localparam BIT1AT = 19;
+  localparam BIT2AT = 28;
+  localparam BIT3AT = 37;
+  localparam BIT4AT = 46;
+  localparam BIT5AT = 55;
+  localparam BIT6AT = 64;
+  localparam BIT7AT = 73;
+  localparam PBITAT = 82;
+  // STOP bit
+
+  // tx flow control 
+  reg [8-1:0] tx_cnt;
+
+  // buffer
+  reg [8-1:0] data2send;
+  wire frame_begin;
+  wire frame_end;
+  assign frame_begin = &{ send_trig, ~tx_bsy };
+  assign frame_end = &{ tx_bsy, tx_cnt == CLKPERFRM };
+
+  always @(posedge clk) begin
+    if(rst) begin
+      tx_bsy <= 1'b0;
+    end else begin
+      if(frame_begin) begin
+        tx_bsy <= 1'b1;
+      end else if(frame_end) begin
+        tx_bsy <= 1'b0;
+      end 
+    end
+  end
+
+
+  always @(posedge clk) begin
+    if(rst) begin
+      tx_cnt <= 8'd0;
+    end else begin
+      if(frame_end) begin
+        tx_cnt <= 8'd0;
+      end else if(tx_bsy) begin
+        tx_cnt <= tx_cnt + 1;
+      end 
+    end
+  end
+
+
+  always @(posedge clk) begin
+    if(rst) begin
+      data2send <= 8'd0;
+    end else begin
+      data2send <= send_data;
+    end
+  end
+
+
+  always @(posedge clk) begin
+    if(rst) begin
+      tx <= 1'b1;
+    end else begin
+      if(tx_bsy) begin
+        case(tx_cnt)
+          TBITAT: begin
+            tx <= 1'b0;
+          end
+          BIT0AT: begin
+            tx <= data2send[0];
+          end
+          BIT1AT: begin
+            tx <= data2send[1];
+          end
+          BIT2AT: begin
+            tx <= data2send[2];
+          end
+          BIT3AT: begin
+            tx <= data2send[3];
+          end
+          BIT4AT: begin
+            tx <= data2send[4];
+          end
+          BIT5AT: begin
+            tx <= data2send[5];
+          end
+          BIT6AT: begin
+            tx <= data2send[6];
+          end
+          BIT7AT: begin
+            tx <= data2send[7];
+          end
+          PBITAT: begin
+            tx <= 1'b0;
+          end
+        endcase
+      end else begin
+        tx <= 1'b1;
+      end
+    end
+  end
+
+
+  initial begin
+    tx = 1;
+    tx_bsy = 0;
+    tx_cnt = 0;
+    data2send = 0;
   end
 
 

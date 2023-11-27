@@ -2,8 +2,9 @@ from pyftdi.ftdi import Ftdi
 import asyncio
 import pyftdi.serialext
 import time
-import random
 import threading
+from PIL import Image
+from math import ceil, log2
 
 
 class UartInterface:
@@ -21,12 +22,7 @@ class UartInterface:
         while not self.stop_flag:
             data = self.port.read()
             if data != b'':
-                ret = int.from_bytes(data)
-                # if ret == 0:
-                # print('Par')
-                # else:
-                print(ret)
-
+                pass  # print(int.from_bytes(data))
             time.sleep(0.01)
 
     def start_listener(self):
@@ -34,7 +30,7 @@ class UartInterface:
         self.start_flag = True
         self.port.reset_input_buffer()
         self.port.reset_output_buffer()
-        time.sleep(0.005)
+        #Stime.sleep(0.005)
         self.listener.start()
 
     def stop_listener(self):
@@ -47,15 +43,27 @@ class UartInterface:
 u = UartInterface()
 u.start_listener()
 
-n = 0
-print("Digite a quantidade de valores a serem enviados (max 255): ")
-n = int(input())
-u.send_data(int.to_bytes(n))
-for i in range(n):
-    print("Digite o %d valor (max 255): " % (i+1))
-    val = int(input())
-    u.send_data(val.to_bytes(1))
-#u.send_data(int.to_bytes(val))
-print()
+im = Image.open(
+    "/home/jeronimo/Documentos/GIT/tang_nano_9k_riscv_monitor/teste_.bmp")
+im.load()
+height, widht = im.size
+
+for row in range(height):
+    for col in range(widht):
+        a = im.getpixel((row, col))
+        nr = int((a[0]/255)*32)
+        ng = int((a[1]/255)*64)
+        nb = int((a[2]/255)*32)
+        h = 0x00  # (nr << 11) | (ng << 5) | nr
+        h_lsb =0x1f
+        ''' 11111 111111 11111 '''
+        h_msb = (h >> 8) & 0xff
+        u.send_data(h_msb.to_bytes(1))
+        #time.sleep(0.005)
+        u.send_data(h_lsb.to_bytes(1))
+        #time.sleep(0.005)
+        # u.send_data(int.to_bytes(0x0))
+
+
 time.sleep(1)
 u.stop_listener()
